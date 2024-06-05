@@ -56,10 +56,14 @@ type IMatchState interface {
 	This() (r rune, ok bool)
 	// Next peeks at the next rune, if there is one
 	Next() (r rune, ok bool)
+
+	Reps() Reps
+
 	// Captured returns true if Capture was previously called on this MatchState
 	Captured() bool
-	// Negated returns true if the scoped Config is negated
-	Negated() bool
+
+	// Flags returns a clone Flags
+	Flags() Flags
 
 	Runes() []rune
 	String() (text string)
@@ -85,7 +89,7 @@ type MatchState interface {
 
 	// CloneWith returns an exact copy of this MatchState with the start point
 	// offset by the positive amount given
-	CloneWith(offset int) MatchState
+	CloneWith(offset int, reps Reps) MatchState
 
 	// Apply updates the other MatchState with this MatchState consumed runes,
 	// capture state and Config Scope
@@ -93,7 +97,7 @@ type MatchState interface {
 
 	// Scope append (if the cfg is not nil) a new Config scope within this
 	// matcher and always returns a composite Config of all scoped configs
-	Scope(cfg *Config) *Config
+	Scope(reps Reps, other Flags) (lh Reps, scope Flags)
 
 	Recycle()
 	private(_ *cMatchState)
@@ -102,26 +106,23 @@ type MatchState interface {
 // match is the MatchState of a Pattern Matcher
 type cMatchState struct {
 	s        *cPatternState
+	flags    *cFlags
+	reps     Reps
 	this     int  // current rune offset from the start
 	start    int  // starting rune index within the input string
-	capture  bool // include as a capture group
 	complete bool // did the match complete successfully
-	scoped   *Config
 	recycled bool
 }
 
 func newMatchState(s *cPatternState, start int) *cMatchState {
 	state := spMatchState.Get()
-	if !state.recycled {
-		// pool created a new one, let's add one more so next isn't new either
-		spMatchState.Seed(-1)
-	}
 	state.s = s
+	f := cFlags(0)
+	state.flags = &f
+	state.reps = DefaultReps[:]
 	state.this = 0
 	state.start = start
-	state.capture = false
 	state.complete = false
-	state.scoped = nil
 	state.recycled = false
 	return state
 }
@@ -129,9 +130,7 @@ func newMatchState(s *cPatternState, start int) *cMatchState {
 func (m *cMatchState) Recycle() {
 	if !m.recycled {
 		m.s = nil
-		if m.scoped != nil {
-			m.scoped.Recycle()
-		}
+		*m.flags = *gDefaultFlags
 		m.recycled = true
 		spMatchState.Put(m)
 	}
@@ -199,11 +198,11 @@ func (m *cMatchState) Next() (r rune, ok bool) {
 }
 
 func (m *cMatchState) Capture() {
-	m.capture = true
+	m.flags.SetCapture()
 }
 
 func (m *cMatchState) Captured() bool {
-	return m.capture
+	return m.flags.Capture()
 }
 
 func (m *cMatchState) Consume(count int) (ok bool) {
@@ -230,15 +229,17 @@ func (m *cMatchState) String() (text string) {
 	return
 }
 
+func (m *cMatchState) Reps() Reps {
+	return m.reps[:]
+}
+
 func (m *cMatchState) Equal(other MatchState) bool {
 	if o, ok := other.(*cMatchState); ok {
 		if m.s == o.s {
 			if m.start == o.start {
 				if m.this == o.this {
-					if m.capture == o.capture {
+					if m.flags.Capture() == o.flags.Capture() {
 						if m.complete == o.complete {
-							//if m.configs.Len() == o.configs.Len() {
-							//}
 							return true
 						}
 					}
@@ -250,47 +251,46 @@ func (m *cMatchState) Equal(other MatchState) bool {
 }
 
 func (m *cMatchState) Clone() MatchState {
-	return m.CloneWith(0)
+	return m.CloneWith(0, m.reps[:])
 }
 
-func (m *cMatchState) CloneWith(offset int) MatchState {
+func (m *cMatchState) CloneWith(offset int, reps Reps) MatchState {
 	if offset < 0 {
 		offset = 0
 	}
 	cloned := newMatchState(m.s, m.start+offset)
+	if reps != nil {
+		cloned.reps = reps
+	} else {
+		cloned.reps = m.reps[:]
+	}
 	cloned.this = m.this
-	cloned.capture = m.capture
+	cloned.flags = m.flags.clone()
 	cloned.complete = m.complete
-	cloned.scoped = m.scoped
 	return cloned
 }
 
 func (m *cMatchState) Apply(other MatchState) {
 	o, _ := other.(*cMatchState)
 	o.this += m.this
-	if m.capture {
-		o.capture = m.capture
+	if m.flags.Capture() {
+		o.flags.SetCapture()
 	}
 	if m.complete {
 		o.complete = m.complete
 	}
 }
 
-func (m *cMatchState) Negated() bool {
-	return m.scoped != nil && m.scoped.Negated
+func (m *cMatchState) Flags() Flags {
+	return m.flags.Clone()
 }
 
-func (m *cMatchState) Scope(cfg *Config) (scope *Config) {
-
-	if m.scoped == nil {
-		m.scoped = newConfig()
+func (m *cMatchState) Scope(reps Reps, other Flags) (lh Reps, scope Flags) {
+	if len(reps) == 2 {
+		m.reps = reps
 	}
-	if cfg != nil {
-		scope = m.scoped.Merge(cfg)
-		m.scoped = scope
-		return
+	if other != nil {
+		m.flags.Merge(other)
 	}
-	// not update, just copied
-	scope = m.scoped.Merge(nil)
-	return
+	return m.reps[:], m.flags.Clone()
 }

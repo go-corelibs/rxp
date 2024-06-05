@@ -53,10 +53,10 @@ type cFragment struct {
 
 func newFragment(s *cPatternState, start, end int, result *cMatch) Fragment {
 	frag := spFragment.Get()
-	if !frag.recycled {
-		// pool created a new one, let's add ten more so next batch aren't new
-		spFragment.Seed(-1)
-	}
+	//if !frag.recycled {
+	//	// pool created a new one, let's add ten more so next batch aren't new
+	//	spFragment.Seed(-1)
+	//}
 	frag.s = s
 	frag.start = start
 	frag.end = end

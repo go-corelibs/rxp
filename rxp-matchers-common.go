@@ -18,13 +18,14 @@ package rxp
 //
 //	(?:\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
 func FieldWord(flags ...string) Matcher {
-	cfg := ParseFlags(flags...)
+	reps, cfg := ParseFlags(flags...)
 	return func(m MatchState) (next, keep bool) {
 		if m.Invalid() {
 			return
 		}
-		scope := m.Scope(cfg)
-		defer scope.Recycle()
+		_, scope := m.Scope(reps, cfg)
+		//lh, scope := m.Scope(reps, cfg)
+		//minimum, maximum := lh[0], lh[1]
 
 		var proceed bool
 		if this, ok := m.This(); ok {
@@ -60,13 +61,13 @@ func FieldWord(flags ...string) Matcher {
 				}
 
 				m.Consume(consume)
-				if keep = scope.Capture; keep {
+				if keep = scope.Capture(); keep {
 					m.Capture()
 				}
 			}
 		}
 
-		if scope.Negated {
+		if scope.Negated() {
 			proceed = !proceed
 		}
 
@@ -79,19 +80,18 @@ func FieldWord(flags ...string) Matcher {
 //
 //	(?:\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func FieldKey(flags ...string) Matcher {
-	cfg := ParseFlags(flags...)
+	reps, cfg := ParseFlags(flags...)
 	return func(m MatchState) (next, keep bool) {
 		if m.Invalid() {
 			return
 		}
-		scope := m.Scope(cfg)
-		defer scope.Recycle()
+		_, scope := m.Scope(reps, cfg)
 
 		if this, ok := m.This(); ok {
 			if next = RuneIsALPHA(this); next {
 				// matched first range [a-zA-Z]
 				m.Consume(1)
-				if keep = scope.Capture; keep {
+				if keep = scope.Capture(); keep {
 					m.Capture()
 				}
 
@@ -125,7 +125,7 @@ func FieldKey(flags ...string) Matcher {
 			}
 		}
 
-		if scope.Negated {
+		if scope.Negated() {
 			next = !next
 		}
 
@@ -138,13 +138,12 @@ func FieldKey(flags ...string) Matcher {
 //
 //	(?:\b[-+]?[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func Keyword(flags ...string) Matcher {
-	cfg := ParseFlags(flags...)
+	reps, cfg := ParseFlags(flags...)
 	return func(m MatchState) (next, keep bool) {
 		if m.Invalid() {
 			return
 		}
-		scope := m.Scope(cfg)
-		defer scope.Recycle()
+		_, scope := m.Scope(reps, cfg)
 
 		if this, ok := m.This(); ok {
 			var plusOrMinus rune
@@ -163,7 +162,7 @@ func Keyword(flags ...string) Matcher {
 
 				// matched first range [a-zA-Z]
 				m.Consume(1)
-				if keep = scope.Capture; keep {
+				if keep = scope.Capture(); keep {
 					m.Capture()
 				}
 
@@ -197,7 +196,7 @@ func Keyword(flags ...string) Matcher {
 			}
 		}
 
-		if scope.Negated {
+		if scope.Negated() {
 			next = !next
 		}
 

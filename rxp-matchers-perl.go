@@ -24,7 +24,7 @@ func Text(text string, flags ...string) Matcher {
 	runes := []rune(text)
 	needLen := len(runes)
 
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 
 		// scan ahead without consuming runes
 
@@ -48,13 +48,13 @@ func Text(text string, flags ...string) Matcher {
 					return
 				}
 
-				if scope.AnyCase {
+				if scope.AnyCase() {
 					proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(input[forward])
 				} else {
 					proceed = runes[idx] == input[forward]
 				}
 
-				if scope.Negated {
+				if scope.Negated() {
 					proceed = !proceed
 				}
 
@@ -74,15 +74,15 @@ func Text(text string, flags ...string) Matcher {
 
 // Dot creates a Matcher equivalent to the regexp dot (.)
 func Dot(flags ...string) Matcher {
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 		if m.Has(start) {
-			if proceed = r != '\n' || scope.DotNL; scope.Negated {
+			if proceed = r != '\n' || scope.DotNL(); scope.Negated() {
 				proceed = !proceed
 			}
 			if proceed {
 				consumed = 1
 			}
-		} else if scope.Negated {
+		} else if scope.Negated() {
 			proceed = true
 		}
 		return
@@ -195,15 +195,15 @@ func Class(name AsciiNames, flags ...string) Matcher {
 //	IsUnicodeRange(unicode.Braille)
 func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 	_ = unicode.Is(table, 'a') // compile-time test for panic cases
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 		if m.Has(start) {
-			if proceed = unicode.Is(table, r); scope.Negated {
+			if proceed = unicode.Is(table, r); scope.Negated() {
 				proceed = !proceed
 			}
 			if proceed {
 				consumed += 1
 			}
-		} else if scope.Negated {
+		} else if scope.Negated() {
 			proceed = true
 		}
 		return

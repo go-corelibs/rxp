@@ -28,7 +28,7 @@ type Matcher func(m MatchState) (next, keep bool)
 // any changes to that MatchState by the RuneMatcher are discarded. In order
 // to have the RuneMatcher consume any runes, return the consumed number of
 // runes and a true proceed
-type RuneMatcher func(cfg *Config, m MatchState, pos int, r rune) (consumed int, proceed bool)
+type RuneMatcher func(cfg Flags, m MatchState, pos int, r rune) (consumed int, proceed bool)
 
 // RuneMatchFn is the signature for the basic character matching functions
 // such as RuneIsWord
@@ -39,10 +39,10 @@ type RuneMatchFn func(r rune) bool
 
 // WrapFn wraps a RuneMatchFn with MakeRuneMatcher
 func WrapFn(matcher RuneMatchFn, flags ...string) Matcher {
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 		if m.Has(start) {
 			// within bounds
-			if proceed = matcher(r); scope.Negated {
+			if proceed = matcher(r); scope.Negated() {
 				proceed = !proceed
 			}
 			if proceed {
@@ -57,16 +57,13 @@ func WrapFn(matcher RuneMatchFn, flags ...string) Matcher {
 // MakeRuneMatcher creates a rxp standard Matcher implementation wrapped
 // around a given RuneMatcher
 func MakeRuneMatcher(match RuneMatcher, flags ...string) Matcher {
-	cfg := ParseFlags(flags...)
-	var minimum int
-	if cfg.Minimum > 0 {
-		minimum = cfg.Minimum
-	}
+	reps, cfg := ParseFlags(flags...)
 	// TODO: investigate optimizing MakeRuneMatcher further, likely has something to do with MatchState handling
 	return func(m MatchState) (next, keep bool) {
-		scope := m.Scope(cfg)
-		defer scope.Recycle()
-		if scope.Capture {
+		lh, scope := m.Scope(reps, cfg)
+		minimum, maximum := lh[0], lh[1]
+
+		if scope.Capture() {
 			m.Capture()
 		}
 
@@ -78,7 +75,7 @@ func MakeRuneMatcher(match RuneMatcher, flags ...string) Matcher {
 				// one past last is necessary for \z and $
 
 				r, _ := m.Get(idx)
-				clone := m.CloneWith(this)
+				clone := m.CloneWith(this, lh)
 				consumed, proceed := match(scope, clone, idx, r)
 				clone.Recycle()
 
@@ -96,10 +93,10 @@ func MakeRuneMatcher(match RuneMatcher, flags ...string) Matcher {
 					if count >= minimum {
 						// met the min req
 						completed = true
-						if scope.Less {
+						if scope.Less() {
 							// don't need more than the min?
 							break
-						} else if scope.Maximum > 0 && count >= scope.Maximum {
+						} else if maximum > 0 && count >= maximum {
 							// there is a limit and this is it
 							break
 						}

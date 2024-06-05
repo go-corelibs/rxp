@@ -20,7 +20,7 @@ package rxp
 // Or accepts Pattern, Matcher and string types and will panic on all others
 func Or(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 		for _, matcher := range matchers {
 			clone := m.Clone()
 			if next, keep := matcher(clone); next {
@@ -45,8 +45,8 @@ func Or(options ...interface{}) Matcher {
 // Not accepts Pattern, Matcher and string types and will panic on all others
 func Not(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
-		scope.Negated = false // adding a ^ to the Not Matcher would cancel out the whole point of an explicit Not
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
+		scope.SetNegated() // adding a ^ to the Not Matcher would cancel out the whole point of an explicit Not
 
 		clone := m.Clone()
 		defer clone.Recycle()
@@ -82,11 +82,11 @@ func Not(options ...interface{}) Matcher {
 // applied
 func Group(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 		clone := m.Clone() // accumulate matched runes
 		defer clone.Recycle()
 		for _, matcher := range matchers {
-			iter := m.CloneWith(clone.Len())
+			iter := m.CloneWith(clone.Len(), m.Reps())
 			if next, _ := matcher(iter); !next {
 				// entire group did not in fact match
 				iter.Recycle()

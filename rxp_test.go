@@ -26,9 +26,7 @@ func xTextNoLoop(text string, flags ...string) Matcher {
 	runes := []rune(text)
 	needLen := len(runes)
 
-	return MakeRuneMatcher(func(cfg *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
-		scope := m.Scope(cfg)
-		defer scope.Recycle()
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 
 		// scan ahead without consuming runes
 		// without any for looping
@@ -44,13 +42,13 @@ func xTextNoLoop(text string, flags ...string) Matcher {
 				return
 			}
 
-			if maybe := string(input[start:end]); scope.AnyCase {
+			if maybe := string(input[start:end]); scope.AnyCase() {
 				proceed = strings.ToLower(text) == strings.ToLower(maybe)
 			} else {
 				proceed = text == maybe
 			}
 
-			if cfg.Negated {
+			if scope.Negated() {
 				if proceed = !proceed; proceed {
 					// negations only move the needle by one
 					consumed = 1

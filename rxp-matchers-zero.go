@@ -16,20 +16,20 @@ package rxp
 
 // Caret creates a Matcher equivalent to the regexp caret [^]
 func Caret(options ...string) Matcher {
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 
-		if scope.Multiline {
+		if scope.Multiline() {
 			// start of input or start of line
 			prev, ok := m.Prev()
 			// if there is no previous character ~or~ the previous is a newline
-			if proceed = !ok || prev == '\n'; scope.Negated {
+			if proceed = !ok || prev == '\n'; scope.Negated() {
 				proceed = !proceed
 			}
 			return
 		}
 
 		// start of input
-		if proceed = start == 0; scope.Negated {
+		if proceed = start == 0; scope.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -38,19 +38,19 @@ func Caret(options ...string) Matcher {
 
 // Dollar creates a Matcher equivalent to the regexp [$]
 func Dollar(options ...string) Matcher {
-	return MakeRuneMatcher(func(scope *Config, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
 
-		if scope.Multiline {
+		if scope.Multiline() {
 			// end of input or end of line
 			// if there is no this character ~or~ this is a newline
-			if proceed = r == '\n'; scope.Negated {
+			if proceed = r == '\n'; scope.Negated() {
 				proceed = !proceed
 			}
 			return
 		}
 
 		// end of input
-		if proceed = start >= m.InputLen(); scope.Negated {
+		if proceed = start >= m.InputLen(); scope.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -60,7 +60,7 @@ func Dollar(options ...string) Matcher {
 // A creates a Matcher equivalent to the regexp [\A]
 func A() Matcher {
 	return func(m MatchState) (next, keep bool) {
-		if next = m.Index() == 0; m.Negated() {
+		if next = m.Index() == 0; m.Flags().Negated() {
 			next = !next
 		}
 		return
@@ -89,7 +89,7 @@ func B() Matcher {
 
 		}
 
-		if m.Negated() {
+		if m.Flags().Negated() {
 			proceed = !proceed
 		}
 
@@ -100,7 +100,7 @@ func B() Matcher {
 // Z is a Matcher equivalent to the regexp [\z]
 func Z() Matcher {
 	return func(m MatchState) (next, keep bool) {
-		if next = m.Invalid(); m.Negated() {
+		if next = m.Invalid(); m.Flags().Negated() {
 			next = !next
 		}
 		return

@@ -56,7 +56,7 @@ func (s *cPatternState) findString(count int) (matched [][]string) {
 			for _, m := range mm {
 				this := string(s.input[m.start : m.start+m.this])
 				list[0] += this
-				if m.capture {
+				if m.flags.Capture() {
 					list = appendSlice(list, this)
 				}
 			}

@@ -27,7 +27,8 @@ func TestMatchState(t *testing.T) {
 		m := &cMatchState{
 			s:        &cPatternState{input: []rune("1234567890")},
 			this:     10,
-			capture:  false,
+			reps:     DefaultReps[:],
+			flags:    mkDefaultFlags(),
 			complete: false,
 		}
 		c.So(m.Len(), c.ShouldEqual, 10)
@@ -50,14 +51,14 @@ func TestMatchState(t *testing.T) {
 		m1 := &cMatchState{
 			s:        m.s,
 			this:     7,
-			capture:  true,
+			reps:     DefaultReps[:],
+			flags:    mkDefaultFlags(),
 			complete: true,
 		}
 		m1.Apply(m)
 		c.So(m.this, c.ShouldEqual, m1.this)
-		c.So(m.capture, c.ShouldEqual, m1.capture)
 		c.So(m.complete, c.ShouldEqual, m1.complete)
-		m2 := m.CloneWith(-1)
+		m2 := m.CloneWith(-1, m.reps)
 		c.So(m2.Equal(m), c.ShouldBeTrue)
 	})
 

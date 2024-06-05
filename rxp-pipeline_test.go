@@ -118,7 +118,7 @@ func TestPipeline(t *testing.T) {
 			Transform(strings.ToLower).
 			ReplaceText(S("+"), " ").
 			ReplaceText(Text("'"), "_").
-			ReplaceText(Not(Or(W(), S()), "c"), "").
+			ReplaceText(Not(W(), S(), "+"), "").
 			Process(`Isn't  this  neat?`),
 			c.ShouldEqual, `isn_t this neat`)
 
