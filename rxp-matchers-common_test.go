@@ -74,7 +74,7 @@ func TestMatchersCommon(t *testing.T) {
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d", idx),
-				test.pattern.ScanString(test.input).Strings(),
+				test.pattern.ScanStrings(test.input).Strings(),
 				c.ShouldEqual,
 				test.output)
 		}
@@ -125,7 +125,7 @@ func TestMatchersCommon(t *testing.T) {
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d", idx),
-				test.pattern.ScanString(test.input).String(),
+				test.pattern.ScanStrings(test.input).String(),
 				c.ShouldEqual,
 				test.input)
 		}

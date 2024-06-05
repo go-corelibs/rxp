@@ -18,8 +18,8 @@ import (
 	"strings"
 )
 
-// Replacement is a Match.String replacement function
-type Replacement func(s Match) (replaced string)
+// Replacement is a Segment.String replacement function
+type Replacement func(s Segment) (replaced string)
 
 // Replace is a Replacement pipeline
 type Replace []Replacement
@@ -31,14 +31,14 @@ func (r Replace) WithReplace(replacer Replacement) Replace {
 
 // WithTransform replaces matches with a Transform function
 func (r Replace) WithTransform(transform Transform) Replace {
-	return append(r, func(m Match) (replaced string) {
+	return append(r, func(m Segment) (replaced string) {
 		return transform(m.String())
 	})
 }
 
 // WithText replaces matches with the plain text given
 func (r Replace) WithText(text string) Replace {
-	return append(r, func(s Match) (replaced string) {
+	return append(r, func(s Segment) (replaced string) {
 		return text
 	})
 }

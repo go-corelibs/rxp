@@ -188,22 +188,56 @@ func TestPattern(t *testing.T) {
 
 	})
 
-	c.Convey("ScanString.Strings", t, func() {
+	c.Convey("ReplaceAllString", t, func() {
 
 		for idx, test := range []struct {
 			input   string
 			pattern Pattern
-			output  []string
+			replace Replace
+			output  string
 		}{
 
-			{input: "", pattern: nil, output: []string(nil)},
-			{input: "one", pattern: Pattern{}.Dot("+", "c"), output: []string{"one"}},
-			{input: "one", pattern: Pattern{}.Dot("{1}", "c"), output: []string{"o", "n", "e"}},
-			{input: "one", pattern: Pattern{}.Text("nope", "c"), output: []string{"one"}},
+			{
+				input: "module@1.0.0/thing.txt",
+				pattern: Pattern{
+					Text("@"),
+					Text("/", "^", "+?"),
+					Text("/"),
+				},
+				replace: Replace{}.WithText("/"),
+				output:  "module@1.0.0/thing.txt",
+			},
+
+			{
+				input: "module@1.0.0/thing.txt",
+				pattern: Pattern{
+					Text("@"),
+					Text("/", "^", "+"),
+					Text("/"),
+				},
+				replace: Replace{}.WithText("/"),
+				output:  "module/thing.txt",
+			},
+
+			{
+				input:   "one",
+				pattern: Pattern{}.Dot("+", "c"),
+				replace: Replace{}.ToUpper(),
+				output:  "ONE",
+			},
+
+			{
+				input:   "one",
+				pattern: Pattern{}.Dot("{1}", "c"),
+				replace: Replace{}.ToUpper(),
+				output:  "ONE",
+			},
+
+			{input: "", pattern: nil, replace: nil, output: ""},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d", idx),
-				test.pattern.ScanString(test.input).Strings(),
+				test.pattern.ReplaceAllString(test.input, test.replace),
 				c.ShouldEqual,
 				test.output,
 			)
@@ -211,27 +245,53 @@ func TestPattern(t *testing.T) {
 
 	})
 
-	c.Convey("ScanString.Indexes", t, func() {
+	c.Convey("ScanString", t, func() {
 
-		for idx, test := range []struct {
-			input   string
-			pattern Pattern
-			output  [][]int
-		}{
+		c.Convey("Strings", func() {
 
-			{input: "", pattern: nil, output: [][]int(nil)},
-			{input: "one", pattern: Pattern{}.Dot("+", "c"), output: [][]int{{0, 3}}},
-			{input: "one", pattern: Pattern{}.Dot("{1}", "c"), output: [][]int{{0, 1}, {1, 2}, {2, 3}}},
-			{input: "one", pattern: Pattern{}.Text("nope", "c"), output: [][]int{{0, 3}}},
-		} {
-			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
-				test.pattern.ScanString(test.input).Indexes(),
-				c.ShouldEqual,
-				test.output,
-			)
-		}
+			for idx, test := range []struct {
+				input   string
+				pattern Pattern
+				output  []string
+			}{
+
+				{input: "", pattern: nil, output: []string{""}},
+				{input: "one", pattern: Pattern{}.Dot("+", "c"), output: []string{"one"}},
+				{input: "one", pattern: Pattern{}.Dot("{1}", "c"), output: []string{"o", "n", "e"}},
+				{input: "one", pattern: Pattern{}.Text("nope", "c"), output: []string{"one"}},
+			} {
+				c.SoMsg(
+					fmt.Sprintf("test #%d", idx),
+					test.pattern.ScanStrings(test.input).Strings(),
+					c.ShouldEqual,
+					test.output,
+				)
+			}
+
+		})
+
+		c.Convey("Indexes", func() {
+
+			for idx, test := range []struct {
+				input   string
+				pattern Pattern
+				output  [][]int
+			}{
+
+				{input: "", pattern: nil, output: [][]int{{0, 0}}},
+				{input: "one", pattern: Pattern{}.Dot("+", "c"), output: [][]int{{0, 3}}},
+				{input: "one", pattern: Pattern{}.Dot("{1}", "c"), output: [][]int{{0, 1}, {1, 2}, {2, 3}}},
+				{input: "one", pattern: Pattern{}.Text("nope", "c"), output: [][]int{{0, 3}}},
+			} {
+				c.SoMsg(
+					fmt.Sprintf("test #%d", idx),
+					test.pattern.ScanStrings(test.input).Indexes(),
+					c.ShouldEqual,
+					test.output,
+				)
+			}
+
+		})
 
 	})
-
 }

@@ -16,37 +16,38 @@ package rxp
 
 // Matcher is a single string matching function
 //
-//	next  indicates that this Matcher function does not match the current rune
-//	      and to progress the Pattern to the next Matcher instance
-//	keep  indicates that this Matcher function was in fact satisfied, even
-//	      though stop may also be true
-type Matcher func(m MatchState) (next, keep bool)
-
-// RuneMatcher is the signature for the MakeRuneMatcher matching function
+//	| Argument | Description                        |
+//	|----------|------------------------------------|
+//	|  scope   | current Flags for this iteration   |
+//	|  reps    | min and max repetition settings    |
+//	|  input   | input rune slice (do not modify!)  |
+//	|  index   | current input rune index to match  |
 //
-// The MatchState provided to RuneMatcher functions is a MatchState.Clone and
-// any changes to that MatchState by the RuneMatcher are discarded. In order
-// to have the RuneMatcher consume any runes, return the consumed number of
-// runes and a true proceed
-type RuneMatcher func(cfg Flags, m MatchState, pos int, r rune) (consumed int, proceed bool)
+//	| Return   | Description                        |
+//	|----------|------------------------------------|
+//	| consumed | number of runes matched from index |
+//	| captured | indicate this is a capture group   |
+//	| negated  | indicate this group is negated     |
+//	| proceed  | matched success, match for more    |
+type Matcher func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured, negated, proceed bool)
 
-// RuneMatchFn is the signature for the basic character matching functions
+// RuneMatcher is the signature for the basic character matching functions
 // such as RuneIsWord
 //
 // Implementations are expected to operate using the least amount of CPU
 // instructions possible
-type RuneMatchFn func(r rune) bool
+type RuneMatcher func(r rune) bool
 
-// WrapFn wraps a RuneMatchFn with MakeRuneMatcher
-func WrapFn(matcher RuneMatchFn, flags ...string) Matcher {
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
-		if m.Has(start) {
-			// within bounds
-			if proceed = matcher(r); scope.Negated() {
+// WrapMatcher wraps a RuneMatcher with MakeMatcher with support for negations
+func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured, negated, proceed bool) {
+		if IndexReady(input, index) {
+			if proceed = matcher(input[index]); scope.Negated() {
 				proceed = !proceed
 			}
 			if proceed {
 				consumed += 1
+				captured = scope.Capture()
 			}
 		}
 		return
@@ -54,49 +55,51 @@ func WrapFn(matcher RuneMatchFn, flags ...string) Matcher {
 
 }
 
-// MakeRuneMatcher creates a rxp standard Matcher implementation wrapped
+// MakeMatcher creates a rxp standard Matcher implementation wrapped
 // around a given RuneMatcher
-func MakeRuneMatcher(match RuneMatcher, flags ...string) Matcher {
-	reps, cfg := ParseFlags(flags...)
-	// TODO: investigate optimizing MakeRuneMatcher further, likely has something to do with MatchState handling
-	return func(m MatchState) (next, keep bool) {
-		lh, scope := m.Scope(reps, cfg)
-		minimum, maximum := lh[0], lh[1]
-
-		if scope.Capture() {
-			m.Capture()
+func MakeMatcher(match Matcher, flags ...string) Matcher {
+	cfgReps, cfg := ParseFlags(flags...)
+	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured, negated, proceed bool) {
+		scope = scope.Merge(cfg)
+		if cfgReps != nil {
+			reps = cfgReps
 		}
 
-		var completed bool
-		var count, queue int
-		for start, this := m.Index()+m.Len(), 0; start+this <= m.InputLen(); {
-			idx := start + this
-			if idx <= m.InputLen() {
+		if scope.Capture() {
+			captured = true
+		}
+
+		inputLen := len(input)
+		var next, capt, completed bool
+		var keep, count, queue int
+		for this := 0; index+this <= inputLen; {
+			idx := index + this
+			if IndexValid(input, idx) {
 				// one past last is necessary for \z and $
 
-				r, _ := m.Get(idx)
-				clone := m.CloneWith(this, lh)
-				consumed, proceed := match(scope, clone, idx, r)
-				clone.Recycle()
+				keep, capt, _, next = match(scope, reps, input, idx)
+				if capt {
+					captured = true
+				}
 
-				if proceed {
+				if next {
 					count += 1
 
-					if consumed == 0 {
+					if keep == 0 {
 						this += 1
-					} else if consumed > 0 && idx <= m.InputLen() {
+					} else if keep > 0 && idx <= inputLen {
 						// guard on progressing beyond EOF
-						this += consumed
-						queue += consumed
+						this += keep
+						queue += keep
 					}
 
-					if count >= minimum {
+					if minHit, maxHit := reps.Satisfied(count); minHit {
 						// met the min req
 						completed = true
 						if scope.Less() {
 							// don't need more than the min?
 							break
-						} else if maximum > 0 && count >= maximum {
+						} else if maxHit {
 							// there is a limit and this is it
 							break
 						}
@@ -106,7 +109,7 @@ func MakeRuneMatcher(match RuneMatcher, flags ...string) Matcher {
 					continue
 				}
 
-				if count >= minimum {
+				if minOk, _ := reps.Satisfied(count); minOk {
 					completed = true
 				}
 
@@ -117,12 +120,39 @@ func MakeRuneMatcher(match RuneMatcher, flags ...string) Matcher {
 		}
 
 		// don't negate this, only negate actual RuneMatchers
-		//if next = completed && scope.IsValidCount(count); next {
-		if next = completed; /*&& scope.IsValidCount(count)*/ next {
-			m.Consume(queue)
-			keep = queue > 0
+		if proceed = completed; proceed {
+			consumed += queue
 		}
 
 		return
 	}
+}
+
+// IndexEnd returns true if this index is exactly the input length, denoting the
+// Dollar zero-width position
+func IndexEnd(input []rune, index int) bool {
+	return index >= len(input)
+}
+
+// IndexReady returns true if this index is less than the input length
+func IndexReady(input []rune, index int) bool {
+	return 0 <= index && index < len(input)
+}
+
+// IndexValid returns true if this index is less than or equal to the input length
+func IndexValid(input []rune, index int) bool {
+	return 0 <= index && index <= len(input)
+}
+
+// IndexInvalid returns true if this index is greater than or equal to the input length
+func IndexInvalid(input []rune, index int) bool {
+	return index < 0 || index >= len(input)
+}
+
+// IndexGet returns the input rune at the given index, if there is one
+func IndexGet(input []rune, index int) (r rune, ok bool) {
+	if ok = 0 <= index && index < len(input); ok {
+		r = input[index]
+	}
+	return
 }

@@ -18,11 +18,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/go-corelibs/values"
 )
 
-var _ Flags = (*cFlags)(nil)
+var _ Flags = cFlags(0)
 
 type cFlags uint64
 
@@ -33,12 +31,15 @@ type Flags interface {
 	AnyCase() bool
 	Capture() bool
 	Less() bool
+	ZeroOrMore() bool
+	ZeroOrOne() bool
+	OneOrMore() bool
 
-	SetNegated()
-	SetCapture()
+	SetNegated() Flags
+	SetCapture() Flags
 
 	Clone() Flags
-	Merge(other Flags)
+	Merge(other Flags) Flags
 	Equal(other Flags) bool
 	String() string
 
@@ -58,12 +59,12 @@ const (
 	fLess
 )
 
-func mkDefaultFlags() *cFlags {
-	return values.Ref(fDefault)
+func mkDefaultFlags() cFlags {
+	return fDefault
 }
 
 var (
-	gDefaultFlags = values.Ref(cFlags(0))
+	gDefaultFlags = fDefault
 )
 
 // ParseOptions accepts Pattern, Matcher and string options and recasts them
@@ -134,16 +135,18 @@ func ParseFlags(flags ...string) (Reps, Flags) {
 		flag = strings.ToLower(strings.TrimSpace(flag))
 		lower := []rune(flag)
 		if size := len(lower); size == 1 {
-			if lh, ok := f.parseFlag(lower[0]); ok {
+			if flg, lh, ok := f.parseFlag(lower[0]); ok {
 				if lh != nil {
 					reps = lh
 				}
+				f = flg
 				continue
 			}
-		} else if lh, ok := f.parseFlags(lower); ok {
+		} else if flg, lh, ok := f.parseFlags(lower); ok {
 			if lh != nil {
 				reps = lh
 			}
+			f = flg
 			continue
 		}
 
@@ -153,86 +156,81 @@ func ParseFlags(flags ...string) (Reps, Flags) {
 	return reps, f
 }
 
-func (f *cFlags) set(flag cFlags) {
-	*f = (*f) | flag
+func (f cFlags) set(flag cFlags) cFlags {
+	return f | flag
 }
 
-func (f *cFlags) unset(flag cFlags) {
-	*f = (*f) &^ flag
+func (f cFlags) unset(flag cFlags) cFlags {
+	return f &^ flag
 }
 
-func (f *cFlags) has(flag cFlags) bool {
-	return (*f)&flag == flag
+func (f cFlags) has(flag cFlags) bool {
+	return f&flag == flag
 }
 
-func (f *cFlags) Negated() bool {
+func (f cFlags) Negated() bool {
 	return f.has(fNegated)
 }
 
-func (f *cFlags) Multiline() bool {
+func (f cFlags) Multiline() bool {
 	return f.has(fMultiline)
 }
 
-func (f *cFlags) DotNL() bool {
+func (f cFlags) DotNL() bool {
 	return f.has(fDotNL)
 }
 
-func (f *cFlags) AnyCase() bool {
+func (f cFlags) AnyCase() bool {
 	return f.has(fAnyCase)
 }
 
-func (f *cFlags) Capture() bool {
+func (f cFlags) Capture() bool {
 	return f.has(fCapture)
 }
 
-func (f *cFlags) Less() bool {
+func (f cFlags) Less() bool {
 	return f.has(fLess)
 }
 
-func (f *cFlags) ZeroOrMore() bool {
+func (f cFlags) ZeroOrMore() bool {
 	return f.has(fZeroOrMore)
 }
 
-func (f *cFlags) ZeroOrOne() bool {
+func (f cFlags) ZeroOrOne() bool {
 	return f.has(fZeroOrOne)
 }
 
-func (f *cFlags) OneOrMore() bool {
+func (f cFlags) OneOrMore() bool {
 	return f.has(fOneOrMore)
 }
 
-func (f *cFlags) SetNegated() {
-	f.set(fNegated)
+func (f cFlags) SetNegated() Flags {
+	return f.set(fNegated)
 }
 
-func (f *cFlags) SetCapture() {
-	f.set(fCapture)
+func (f cFlags) SetCapture() Flags {
+	return f.set(fCapture)
 }
 
-func (f *cFlags) Clone() Flags {
-	v := *f
-	return &v
+func (f cFlags) Clone() Flags {
+	return f
 }
 
-func (f *cFlags) clone() *cFlags {
-	v := *f
-	return &v
-}
-
-func (f *cFlags) Merge(other Flags) {
-	if o, ok := other.(*cFlags); ok {
-		*f |= *o
+func (f cFlags) Merge(other Flags) Flags {
+	if o, ok := other.(cFlags); ok {
+		return f | o
 	}
+	return f
 }
 
-func (f *cFlags) Equal(other Flags) bool {
-	if o, ok := other.(*cFlags); ok {
-		return *f == *o
+func (f cFlags) Equal(other Flags) bool {
+	if o, ok := other.(cFlags); ok {
+		return f == o
 	}
 	return false
 }
 
-func (f *cFlags) String() string {
+func (f cFlags) String() string {
 	var buf strings.Builder
 	switch {
 	case f.ZeroOrMore():
@@ -263,52 +261,51 @@ func (f *cFlags) String() string {
 	return buf.String()
 }
 
-func (f *cFlags) private(_ *cFlags) {}
+func (f cFlags) private(_ *cFlags) {}
 
-func (f *cFlags) parseFlag(lower rune) (reps Reps, ok bool) {
+func (f cFlags) parseFlag(lower rune) (flags cFlags, reps Reps, ok bool) {
+	flags = f
 	switch lower {
 	case '^':
-		f.set(fNegated)
+		flags = flags.set(fNegated)
 
 	case 'm':
-		f.set(fMultiline)
+		flags = flags.set(fMultiline)
 
 	case 's':
-		f.set(fDotNL)
+		flags = flags.set(fDotNL)
 
 	case 'i':
-		f.set(fAnyCase)
+		flags = flags.set(fAnyCase)
 
 	case 'c':
-		f.set(fCapture)
+		flags = flags.set(fCapture)
 
 	case '*':
 		reps = Reps{-1, -1}
-		f.unset(fLess)
-		f.set(fZeroOrMore)
+		flags = flags.unset(fLess).set(fZeroOrMore)
 
 	case '+':
 		reps = Reps{1, -1}
-		f.unset(fLess)
-		f.set(fOneOrMore)
+		flags = flags.unset(fLess).set(fOneOrMore)
 
 	case '?':
 		reps = Reps{0, 1}
-		f.unset(fLess)
-		f.set(fZeroOrOne)
+		flags = flags.unset(fLess).set(fZeroOrOne)
 
 	case 0, ' ':
 		// nop is ok
 
 	default:
 		// error
-		return nil, false
+		return f, nil, false
 
 	}
-	return reps, true
+	return flags, reps, true
 }
 
-func (f *cFlags) parseFlags(input []rune) (reps Reps, ok bool) {
+func (f cFlags) parseFlags(input []rune) (flags cFlags, reps Reps, ok bool) {
+	flags = f
 
 	for idx := 0; idx < len(input); idx += 1 {
 		var next rune
@@ -321,66 +318,69 @@ func (f *cFlags) parseFlags(input []rune) (reps Reps, ok bool) {
 
 		case '*':
 			reps = Reps{-1, -1}
-			f.set(fZeroOrMore)
+			flags = flags.set(fZeroOrMore)
 			if next == '?' {
 				idx += 1
-				f.set(fLess)
+				flags = flags.set(fLess)
 			} else {
-				f.unset(fLess)
+				flags = flags.unset(fLess)
 			}
 
 		case '+':
 			reps = Reps{1, -1}
-			f.set(fOneOrMore)
+			flags = flags.set(fOneOrMore)
 			if next == '?' {
 				idx += 1
-				f.set(fLess)
+				flags = flags.set(fLess)
 			} else {
-				f.unset(fLess)
+				flags = flags.unset(fLess)
 			}
 
 		case '?':
 			reps = Reps{0, 1}
-			f.set(fZeroOrOne)
+			flags = flags.set(fZeroOrOne)
 			if next == '?' {
 				idx += 1
-				f.set(fLess)
+				flags = flags.set(fLess)
 			} else {
-				f.unset(fLess)
+				flags = flags.unset(fLess)
 			}
 
 		case '{':
 
-			if v, lh, ok := f.parseRangeFlag(idx, input); ok {
+			if v, flg, lh, ok := flags.parseRangeFlag(idx, input); ok {
 				if lh != nil {
 					reps = lh
 				}
 				idx = v
+				flags = flg
 				continue
 			}
 
-			return nil, false
+			return f, nil, false
 
 		case ' ':
 		// nop is allowed
 
 		case '^', 'm', 's', 'i', 'c':
-			if _, ok := f.parseFlag(this); ok {
+			if flags, _, ok = flags.parseFlag(this); ok {
 				continue
 			}
+			return f, nil, false
 
 		default:
 			// error
-			return nil, false
+			return f, nil, false
 		}
 
 	}
 
-	return reps, true
+	return flags, reps, true
 }
 
-func (f *cFlags) parseRangeFlag(index int, input []rune) (idx int, reps Reps, ok bool) {
+func (f cFlags) parseRangeFlag(index int, input []rune) (idx int, flags cFlags, reps Reps, ok bool) {
 	idx = index
+	flags = f
 
 	pair := []string{""}
 	var jdx int
@@ -394,7 +394,7 @@ func (f *cFlags) parseRangeFlag(index int, input []rune) (idx int, reps Reps, ok
 	if jdx+1 < len(input) {
 		if input[jdx+1] == '?' {
 			jdx += 1
-			f.set(fLess)
+			flags = flags.set(fLess)
 		}
 	}
 
@@ -406,22 +406,22 @@ func (f *cFlags) parseRangeFlag(index int, input []rune) (idx int, reps Reps, ok
 	case 1:
 		if exact, err := strconv.Atoi(pair[0]); err == nil {
 			reps = Reps{exact, exact}
-			return idx, reps, true // keep going
+			return idx, flags, reps, true // keep going
 		}
 	case 2:
 		if minimum, err := strconv.Atoi(pair[0]); err == nil {
 			if pair[1] == "" {
 				reps = Reps{minimum, -1}
-				return idx, reps, true // keep going
+				return idx, flags, reps, true // keep going
 			} else if maximum, ee := strconv.Atoi(pair[1]); ee == nil {
 				if minimum <= maximum {
 					reps = Reps{minimum, maximum}
-					return idx, reps, true // keep going
+					return idx, flags, reps, true // keep going
 				}
 			}
 		}
 
 	}
 
-	return 0, nil, false
+	return 0, f, nil, false
 }

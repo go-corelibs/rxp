@@ -22,7 +22,6 @@ func (p Pattern) Match(input []rune) (ok bool) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
 		ok = s.match(1)
-		s.matches.Recycle()
 		s.matches = nil
 	}
 	return
@@ -32,42 +31,12 @@ func (p Pattern) MatchString(input string) (ok bool) {
 	return p.Match([]rune(input))
 }
 
-//func (p Pattern) Find(input []rune) (found []rune) {
-//	if mm := p.FindSubmatch(input); len(mm) > 0 {
-//		found = mm[0]
-//	}
-//	return
-//}
-
-//func (p Pattern) FindAll(input []rune, count int) (found [][]rune) {
-//	if len(p) > 0 {
-//		s := newPatternState(p, input)
-//		for _, m := range s.find(count) {
-//			found = append(found, m[0]) // always at least one present
-//		}
-//	}
-//	return
-//}
-
-//func (p Pattern) FindAllIndex(input []rune, count int) (found [][]int) {
-//	if len(p) > 0 {
-//		s := newPatternState(p, input)
-//		if s.match(count) {
-//			for _, mm := range s.matches {
-//				found = append(found, []int{mm[0].start, mm[0].start + mm[0].this})
-//			}
-//		}
-//	}
-//	return
-//}
-
 func (p Pattern) FindAllString(input string, count int) (found []string) {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
 		for _, m := range s.findString(count) {
 			found = append(found, m[0]) // always at least one present
 		}
-		s.matches.Recycle()
 		s.matches = nil
 	}
 	return
@@ -78,10 +47,9 @@ func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
 		s := newPatternState(p, []rune(input))
 		if s.match(count) {
 			for _, mm := range s.matches {
-				found = append(found, []int{mm[0].start, mm[0].start + mm[0].this})
+				found = append(found, []int{mm[0].Start(), mm[0].End()})
 			}
 		}
-		s.matches.Recycle()
 		s.matches = nil
 	}
 	return
@@ -91,21 +59,21 @@ func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]strin
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
 		found = s.findString(count)
-		s.matches.Recycle()
 		s.matches = nil
 	}
 	return
 }
 
-//func (p Pattern) FindSubmatch(input []rune) (found [][]rune) {
-//	if len(p) > 0 {
-//		s := newPatternState(p, input)
-//		if mm := s.find(1); len(mm) > 0 {
-//			found = mm[0]
-//		}
-//	}
-//	return
-//}
+func (p Pattern) FindAllStringSubmatchIndex(input string, count int) (found Matches) {
+	if len(p) > 0 {
+		s := newPatternState(p, []rune(input))
+		if s.match(count) {
+			found = s.matches
+		}
+		s.matches = nil
+	}
+	return
+}
 
 func (p Pattern) FindString(input string) string {
 	if mm := p.FindStringSubmatch(input); len(mm) > 0 {
@@ -120,7 +88,6 @@ func (p Pattern) FindStringSubmatch(input string) (found []string) {
 		if mm := s.findString(1); len(mm) > 0 {
 			found = mm[0]
 		}
-		s.matches.Recycle()
 		s.matches = nil
 	}
 	return
@@ -131,9 +98,8 @@ func (p Pattern) FindIndex(input string) (found []int) {
 		s := newPatternState(p, []rune(input))
 		if s.match(1) {
 			mm := s.matches[0]
-			found = []int{mm[0].start, mm[0].start + mm[0].this}
+			found = []int{mm[0].Start(), mm[0].End()}
 		}
-		s.matches.Recycle()
 		s.matches = nil
 	}
 	return
@@ -144,20 +110,28 @@ func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 		return input
 	}
 	s := newPatternState(p, []rune(input))
-	fragments := s.scan(-1)
+	if !s.match(-1) {
+		return input
+	}
 	buf := getStringsBuilder()
 	defer putStringsBuilder(buf)
-	for _, frag := range fragments {
-		if m, ok := frag.Match(); ok {
-			for _, r := range repl {
-				buf.WriteString(r(m))
-			}
-		} else {
-			buf.WriteString(frag.String())
+	var last int
+	for _, match := range s.matches {
+		if last < match.Start() {
+			buf.WriteString(string(s.input[last:match.Start()]))
 		}
-		frag.Recycle()
+		last = match.End()
+		for _, rpl := range repl {
+			buf.WriteString(rpl(&cSegment{
+				input:   s.input,
+				matched: true,
+				matches: match,
+			}))
+		}
 	}
-	s.matches.Recycle()
+	if last < len(s.input) {
+		buf.WriteString(string(s.input[last:]))
+	}
 	s.matches = nil
 	return buf.String()
 }
@@ -167,27 +141,70 @@ func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 		return input
 	}
 	s := newPatternState(p, []rune(input))
-	fragments := s.scan(-1)
+	if !s.match(-1) {
+		return input
+	}
 	buf := getStringsBuilder()
 	defer putStringsBuilder(buf)
-	for _, frag := range fragments {
-		if result, ok := frag.Match(); ok {
-			buf.WriteString(repl(result.String()))
-		} else {
-			buf.WriteString(frag.String())
+	var last int
+	for _, match := range s.matches {
+		if last < match.Start() {
+			buf.WriteString(string(s.input[last:match.Start()]))
 		}
-		frag.Recycle()
+		last = match.End()
+		buf.WriteString(repl(string(s.input[match.Start():match.End()])))
 	}
-	s.matches.Recycle()
+	if last < len(s.input) {
+		buf.WriteString(string(s.input[last:]))
+	}
 	s.matches = nil
 	return buf.String()
 }
 
-func (p Pattern) ScanString(input string) (fragments Fragments) {
-	if len(p) > 0 {
-		s := newPatternState(p, []rune(input))
-		fragments = s.scan(-1)
-		s.matches = nil
+func (p Pattern) ScanStrings(input string) (segments Segments) {
+	runes := []rune(input)
+	if len(p) == 0 {
+		return []Segment{&cSegment{
+			input:   runes,
+			matched: false,
+			matches: SubMatches{SubMatch{0, len(runes)}},
+		}}
 	}
+
+	s := newPatternState(p, runes)
+	if !s.match(-1) {
+		return []Segment{&cSegment{
+			input:   runes,
+			matched: false,
+			matches: SubMatches{SubMatch{0, len(runes)}},
+		}}
+	}
+
+	var last int
+	for _, match := range s.matches {
+		if last < match.Start() {
+			segments = appendSlice[Segment](segments, &cSegment{
+				input:   runes,
+				matched: false,
+				matches: SubMatches{SubMatch{last, match.Start()}},
+			})
+		}
+		last = match.End()
+
+		segments = appendSlice[Segment](segments, &cSegment{
+			input:   runes,
+			matched: true,
+			matches: match,
+		})
+	}
+
+	if last < len(s.input) {
+		segments = appendSlice[Segment](segments, &cSegment{
+			input:   runes,
+			matched: false,
+			matches: SubMatches{SubMatch{last, len(s.input)}},
+		})
+	}
+	s.matches = nil
 	return
 }

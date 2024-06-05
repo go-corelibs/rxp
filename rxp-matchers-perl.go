@@ -24,7 +24,7 @@ func Text(text string, flags ...string) Matcher {
 	runes := []rune(text)
 	needLen := len(runes)
 
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		// scan ahead without consuming runes
 
@@ -32,19 +32,12 @@ func Text(text string, flags ...string) Matcher {
 		// number of times unicode.ToLower is called compared to
 		// strings.ToLower which has to scan the entire string each time
 
-		if m.Has(start) {
-			// with for looping
-			// this version works
-
-			input := m.Input()
-			inputLen := len(input)
+		if IndexReady(input, index) {
 
 			for idx := 0; idx < needLen; idx++ {
-				// match this rune with corresponding index value
-
-				forward := start + m.Len() + idx // forward position
-				if proceed = forward < inputLen; !proceed {
-					// forward is past EOF, OOB is not negated?
+				forward := index + idx // forward position
+				if proceed = IndexReady(input, forward); !proceed {
+					// forward is past EOF, OOB is not negated
 					return
 				}
 
@@ -59,6 +52,7 @@ func Text(text string, flags ...string) Matcher {
 				}
 
 				if !proceed {
+					// early out
 					return
 				}
 
@@ -74,8 +68,9 @@ func Text(text string, flags ...string) Matcher {
 
 // Dot creates a Matcher equivalent to the regexp dot (.)
 func Dot(flags ...string) Matcher {
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
-		if m.Has(start) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+
+		if r, ok := IndexGet(input, index); ok {
 			if proceed = r != '\n' || scope.DotNL(); scope.Negated() {
 				proceed = !proceed
 			}
@@ -85,93 +80,94 @@ func Dot(flags ...string) Matcher {
 		} else if scope.Negated() {
 			proceed = true
 		}
+
 		return
 	}, flags...)
 }
 
 // D creates a Matcher equivalent to the regexp \d
 func D(flags ...string) Matcher {
-	return WrapFn(RuneIsDIGIT, flags...)
+	return WrapMatcher(RuneIsDIGIT, flags...)
 }
 
 // S creates a Matcher equivalent to the regexp \s
 func S(flags ...string) Matcher {
-	return WrapFn(RuneIsSpace, flags...)
+	return WrapMatcher(RuneIsSpace, flags...)
 }
 
 // W creates a Matcher equivalent to the regexp \w
 func W(flags ...string) Matcher {
-	return WrapFn(RuneIsWord, flags...)
+	return WrapMatcher(RuneIsWord, flags...)
 }
 
 // Alnum creates a Matcher equivalent to [:alnum:]
 func Alnum(flags ...string) Matcher {
-	return WrapFn(RuneIsALNUM, flags...)
+	return WrapMatcher(RuneIsALNUM, flags...)
 }
 
 // Alpha creates a Matcher equivalent to [:alpha:]
 func Alpha(flags ...string) Matcher {
-	return WrapFn(RuneIsALPHA, flags...)
+	return WrapMatcher(RuneIsALPHA, flags...)
 }
 
 // Ascii creates a Matcher equivalent to [:ascii:]
 func Ascii(flags ...string) Matcher {
-	return WrapFn(RuneIsASCII, flags...)
+	return WrapMatcher(RuneIsASCII, flags...)
 }
 
 // Blank creates a Matcher equivalent to [:blank:]
 func Blank(flags ...string) Matcher {
-	return WrapFn(RuneIsBLANK, flags...)
+	return WrapMatcher(RuneIsBLANK, flags...)
 }
 
 // Cntrl creates a Matcher equivalent to [:cntrl:]
 func Cntrl(flags ...string) Matcher {
-	return WrapFn(RuneIsCNTRL, flags...)
+	return WrapMatcher(RuneIsCNTRL, flags...)
 }
 
 // Digit creates a Matcher equivalent to [:digit:]
 func Digit(flags ...string) Matcher {
-	return WrapFn(RuneIsDIGIT, flags...)
+	return WrapMatcher(RuneIsDIGIT, flags...)
 }
 
 // Graph creates a Matcher equivalent to [:graph:]
 func Graph(flags ...string) Matcher {
-	return WrapFn(RuneIsGRAPH, flags...)
+	return WrapMatcher(RuneIsGRAPH, flags...)
 }
 
 // Lower creates a Matcher equivalent to [:lower:]
 func Lower(flags ...string) Matcher {
-	return WrapFn(RuneIsLOWER, flags...)
+	return WrapMatcher(RuneIsLOWER, flags...)
 }
 
 // Print creates a Matcher equivalent to [:print:]
 func Print(flags ...string) Matcher {
-	return WrapFn(RuneIsPRINT, flags...)
+	return WrapMatcher(RuneIsPRINT, flags...)
 }
 
 // Punct creates a Matcher equivalent to [:punct:]
 func Punct(flags ...string) Matcher {
-	return WrapFn(RuneIsPUNCT, flags...)
+	return WrapMatcher(RuneIsPUNCT, flags...)
 }
 
 // Space creates a Matcher equivalent to [:space:]
 func Space(flags ...string) Matcher {
-	return WrapFn(RuneIsSpace, flags...)
+	return WrapMatcher(RuneIsSPACE, flags...)
 }
 
 // Upper creates a Matcher equivalent to [:upper:]
 func Upper(flags ...string) Matcher {
-	return WrapFn(RuneIsUPPER, flags...)
+	return WrapMatcher(RuneIsUPPER, flags...)
 }
 
 // Word creates a Matcher equivalent to [:word:]
 func Word(flags ...string) Matcher {
-	return WrapFn(RuneIsWord, flags...)
+	return WrapMatcher(RuneIsWord, flags...)
 }
 
 // Xdigit creates a Matcher equivalent to [:xdigit:]
 func Xdigit(flags ...string) Matcher {
-	return WrapFn(RuneIsXDIGIT, flags...)
+	return WrapMatcher(RuneIsXDIGIT, flags...)
 }
 
 // Class creates a Matcher equivalent to the regexp [:AsciiNames:],
@@ -181,7 +177,7 @@ func Xdigit(flags ...string) Matcher {
 // Class will panic if given an invalid class name
 func Class(name AsciiNames, flags ...string) Matcher {
 	if matcher, ok := LookupAsciiClass[name]; ok {
-		return WrapFn(matcher, flags...)
+		return WrapMatcher(matcher, flags...)
 	}
 	panic(fmt.Errorf("invalid AsciiNames: %q", name))
 }
@@ -195,8 +191,9 @@ func Class(name AsciiNames, flags ...string) Matcher {
 //	IsUnicodeRange(unicode.Braille)
 func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 	_ = unicode.Is(table, 'a') // compile-time test for panic cases
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
-		if m.Has(start) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+
+		if r, ok := IndexGet(input, index); ok {
 			if proceed = unicode.Is(table, r); scope.Negated() {
 				proceed = !proceed
 			}
@@ -206,6 +203,7 @@ func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 		} else if scope.Negated() {
 			proceed = true
 		}
+
 		return
 	}, flags...)
 }

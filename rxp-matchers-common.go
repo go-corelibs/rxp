@@ -18,52 +18,48 @@ package rxp
 //
 //	(?:\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
 func FieldWord(flags ...string) Matcher {
-	reps, cfg := ParseFlags(flags...)
-	return func(m MatchState) (next, keep bool) {
-		if m.Invalid() {
+	_, cfg := ParseFlags(flags...)
+	return func(scope Flags, _ Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+		if IndexInvalid(input, index) {
 			return
 		}
-		_, scope := m.Scope(reps, cfg)
-		//lh, scope := m.Scope(reps, cfg)
-		//minimum, maximum := lh[0], lh[1]
+		scope = scope.Merge(cfg)
 
-		var proceed bool
-		if this, ok := m.This(); ok {
-			if proceed = RuneIsALNUM(this); proceed {
-				// first rune matched the first range [a-zA-Z]
-				m.Consume(1)
+		var this rune
+		if this, proceed = IndexGet(input, index); !proceed {
+			if scope.Negated() {
+				proceed = true
+			}
+			return
+		}
 
-				var consume int
-				input := m.Input()
-				total := len(input)
-				start := m.Index() + m.Len()
+		if proceed = RuneIsALNUM(this); proceed {
+			// first rune matched the first range [a-zA-Z]
+			consumed += 1
 
-				// scan for second range runes
-				for idx := start; idx < total; idx += 1 {
-					r := input[idx]
+			total := len(input)
 
-					if r == '\'' || RuneIsALNUM(r) {
-						consume += 1
-						continue
-					}
+			// scan for second range runes
+			for idx := index + consumed; idx < total; idx += 1 {
+				r := input[idx]
 
-					// stop scanning, not within second range anymore
-					break
+				if r == '\'' || RuneIsALNUM(r) {
+					consumed += 1
+					continue
 				}
 
-				if consume > 0 && start+consume < total {
-					for consume-1 >= 0 {
-						if RuneIsALNUM(input[start+consume-1]) {
-							break
-						}
-						consume -= 1
-					}
-				}
+				// stop scanning, not within second range anymore
+				break
+			}
 
-				m.Consume(consume)
-				if keep = scope.Capture(); keep {
-					m.Capture()
+			if consumed > 1 && index+consumed-1 < total {
+				for consumed > 1 && !RuneIsALNUM(input[index+consumed-1]) {
+					consumed -= 1
 				}
+			}
+
+			if scope.Capture() {
+				captured = true
 			}
 		}
 
@@ -71,7 +67,6 @@ func FieldWord(flags ...string) Matcher {
 			proceed = !proceed
 		}
 
-		next = proceed
 		return
 	}
 }
@@ -80,53 +75,54 @@ func FieldWord(flags ...string) Matcher {
 //
 //	(?:\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func FieldKey(flags ...string) Matcher {
-	reps, cfg := ParseFlags(flags...)
-	return func(m MatchState) (next, keep bool) {
-		if m.Invalid() {
+	_, cfg := ParseFlags(flags...)
+	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+		if IndexInvalid(input, index) {
 			return
 		}
-		_, scope := m.Scope(reps, cfg)
+		scope = scope.Merge(cfg)
 
-		if this, ok := m.This(); ok {
-			if next = RuneIsALPHA(this); next {
-				// matched first range [a-zA-Z]
-				m.Consume(1)
-				if keep = scope.Capture(); keep {
-					m.Capture()
-				}
-
-				var consume int
-				input := m.Input()
-				total := len(input)
-				start := m.Index() + m.Len()
-
-				// scan for second range
-				for idx := start; idx < total; idx += 1 {
-					r := input[idx]
-
-					if RuneIsDashUnderALNUM(r) {
-						consume += 1
-						continue
-					}
-
-					// not a valid rune for this Matcher
-					break
-				}
-
-				// if the last rune is [-_], rewind to last [^-_]
-				if consume > 0 && start+consume < total {
-					for last := input[start+consume]; consume > 0 && (last == '-' || last == '_'); consume -= 1 {
-					}
-				}
-				if consume > 0 {
-					m.Consume(consume)
-				}
-
+		var this rune
+		if this, proceed = IndexGet(input, index); !proceed {
+			if scope.Negated() {
+				proceed = true
 			}
+			return
+		}
+
+		if proceed = RuneIsALPHA(this); proceed {
+			// matched first range [a-zA-Z]
+			consumed += 1
+			if scope.Capture() {
+				captured = true
+			}
+
+			total := len(input)
+
+			// scan for second range
+			for idx := index + consumed; idx < total; idx += 1 {
+				r := input[idx]
+
+				if RuneIsDashUnderALNUM(r) {
+					consumed += 1
+					continue
+				}
+
+				// not a valid rune for this Matcher
+				break
+			}
+
+			// if the last rune is [-_], rewind to last [^-_]
+			if consumed > 1 && index+consumed-1 < total {
+				for consumed > 1 && RuneIsDashUnder(input[index+consumed-1]) {
+					consumed -= 1
+				}
+			}
+
 		}
 
 		if scope.Negated() {
-			next = !next
+			proceed = !proceed
 		}
 
 		return
@@ -138,66 +134,68 @@ func FieldKey(flags ...string) Matcher {
 //
 //	(?:\b[-+]?[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func Keyword(flags ...string) Matcher {
-	reps, cfg := ParseFlags(flags...)
-	return func(m MatchState) (next, keep bool) {
-		if m.Invalid() {
+	_, cfg := ParseFlags(flags...)
+	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+		if IndexInvalid(input, index) {
 			return
 		}
-		_, scope := m.Scope(reps, cfg)
+		scope = scope.Merge(cfg)
 
-		if this, ok := m.This(); ok {
-			var plusOrMinus rune
-			if RuneIsPlusMinus(this) {
-				plusOrMinus = this
-				if this, ok = m.Get(m.Index() + m.Len() + 1); !ok {
-					return false, false
+		var this rune
+		if this, proceed = IndexGet(input, index); !proceed {
+			if scope.Negated() {
+				proceed = true
+			}
+			return
+		}
+
+		var plusOrMinus rune
+		if RuneIsPlusMinus(this) {
+			plusOrMinus = this
+			if this, proceed = IndexGet(input, index+1); !proceed {
+				return
+			}
+		}
+
+		if proceed = RuneIsALPHA(this); proceed {
+
+			if plusOrMinus > 0 {
+				// consume the previously detected keyword modifier rune
+				consumed += 1
+			}
+
+			// this matched first range [a-zA-Z]
+			consumed += 1
+			if scope.Capture() {
+				captured = true
+			}
+
+			total := len(input)
+
+			// scan for second range
+			for idx := index + consumed; idx < total; idx += 1 {
+				r := input[idx]
+
+				if RuneIsDashUnderALNUM(r) {
+					consumed += 1
+					continue
+				}
+
+				// not a valid rune for this Matcher
+				break
+			}
+
+			// if the last rune is [-_], rewind to last [^-_]
+			if consumed > 1 && index+consumed-1 < total {
+				for consumed > 1 && RuneIsDashUnder(input[index+consumed-1]) {
+					consumed -= 1
 				}
 			}
-			if next = RuneIsALPHA(this); next {
 
-				if plusOrMinus > 0 {
-					// consume the keyword modifier rune
-					m.Consume(1)
-				}
-
-				// matched first range [a-zA-Z]
-				m.Consume(1)
-				if keep = scope.Capture(); keep {
-					m.Capture()
-				}
-
-				var consume int
-				input := m.Input()
-				total := len(input)
-				start := m.Index() + m.Len()
-
-				// scan for second range
-				for idx := start; idx < total; idx += 1 {
-					r := input[idx]
-
-					if RuneIsDashUnderALNUM(r) {
-						consume += 1
-						continue
-					}
-
-					// not a valid rune for this Matcher
-					break
-				}
-
-				// if the last rune is [-_], rewind to last [^-_]
-				if consume > 0 {
-					if start+consume < total {
-						for last := input[start+consume]; consume > 0 && RuneIsDashUnder(last); consume -= 1 {
-						}
-					}
-					m.Consume(consume)
-				}
-
-			}
 		}
 
 		if scope.Negated() {
-			next = !next
+			proceed = !proceed
 		}
 
 		return

@@ -30,7 +30,7 @@ func TestPipeline(t *testing.T) {
 				Replace(nil, nil).
 				Replace(
 					Pattern{}.Dot("+sc"),
-					Replace{}.WithReplace(func(s Match) string {
+					Replace{}.WithReplace(func(s Segment) string {
 						var buf strings.Builder
 						buf.WriteString(s.String())
 						buf.WriteString(s.String())
@@ -49,7 +49,7 @@ func TestPipeline(t *testing.T) {
 		c.So(
 			Pipeline{}.
 				Replace(Pattern{}.Dot(), Replace{}.ToLower()).
-				Replace(Pattern{}.Text("two"), Replace{func(s Match) (replaced string) {
+				Replace(Pattern{}.Text("two"), Replace{func(s Segment) (replaced string) {
 					return "2"
 				}}).
 				Process(`ONE TWO MANY MORE`),
@@ -60,7 +60,7 @@ func TestPipeline(t *testing.T) {
 		c.So(
 			Pipeline{}.
 				Replace(Pattern{}.Dot("*"), Replace{}.ToUpper()).
-				Replace(Pattern{}.Text("two", "i"), Replace{func(s Match) (replaced string) {
+				Replace(Pattern{}.Text("two", "i"), Replace{func(s Segment) (replaced string) {
 					return "2"
 				}}).
 				Process(`one two many more`),
@@ -71,7 +71,7 @@ func TestPipeline(t *testing.T) {
 		c.So(
 			Pipeline{}.
 				Transform(strings.ToUpper).
-				Replace(Pattern{}.Text("two", "i"), Replace{func(s Match) (replaced string) {
+				Replace(Pattern{}.Text("two", "i"), Replace{func(s Segment) (replaced string) {
 					return "2"
 				}}).
 				Process(`one two many more`),
@@ -82,7 +82,7 @@ func TestPipeline(t *testing.T) {
 		c.So(
 			Pipeline{}.
 				ReplaceWith(Pattern{}.Text("ONE", "i"), strings.ToUpper).
-				Replace(Pattern{}.Text("two", "i"), Replace{func(s Match) (replaced string) {
+				Replace(Pattern{}.Text("two", "i"), Replace{func(s Segment) (replaced string) {
 					return "2"
 				}}).
 				Process(`one two many more`),

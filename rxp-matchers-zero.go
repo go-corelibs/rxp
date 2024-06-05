@@ -16,11 +16,11 @@ package rxp
 
 // Caret creates a Matcher equivalent to the regexp caret [^]
 func Caret(options ...string) Matcher {
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
 			// start of input or start of line
-			prev, ok := m.Prev()
+			prev, ok := IndexGet(input, index-1)
 			// if there is no previous character ~or~ the previous is a newline
 			if proceed = !ok || prev == '\n'; scope.Negated() {
 				proceed = !proceed
@@ -29,7 +29,7 @@ func Caret(options ...string) Matcher {
 		}
 
 		// start of input
-		if proceed = start == 0; scope.Negated() {
+		if proceed = index == 0; scope.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -38,19 +38,24 @@ func Caret(options ...string) Matcher {
 
 // Dollar creates a Matcher equivalent to the regexp [$]
 func Dollar(options ...string) Matcher {
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
 			// end of input or end of line
 			// if there is no this character ~or~ this is a newline
-			if proceed = r == '\n'; scope.Negated() {
+			if proceed = IndexEnd(input, index); proceed {
+				return
+			}
+			r, ok := IndexGet(input, index)
+			if proceed = ok && r == '\n'; scope.Negated() {
 				proceed = !proceed
 			}
+			// matched on the newline
 			return
 		}
 
-		// end of input
-		if proceed = start >= m.InputLen(); scope.Negated() {
+		// matching on end of input
+		if proceed = IndexEnd(input, index); scope.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -59,9 +64,9 @@ func Dollar(options ...string) Matcher {
 
 // A creates a Matcher equivalent to the regexp [\A]
 func A() Matcher {
-	return func(m MatchState) (next, keep bool) {
-		if next = m.Index() == 0; m.Flags().Negated() {
-			next = !next
+	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+		if proceed = index == 0; scope.Negated() {
+			proceed = !proceed
 		}
 		return
 	}
@@ -69,27 +74,37 @@ func A() Matcher {
 
 // B creates a Matcher equivalent to the regexp [\b]
 func B() Matcher {
-	return func(m MatchState) (proceed, keep bool) {
+	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
 
-		start := m.Index()
-		next, _ := m.This()
-		prev, _ := m.Prev()
+		this, _ := IndexGet(input, index)
+		next, _ := IndexGet(input, index+1)
+		prev, _ := IndexGet(input, index-1)
 
-		if proceed = start == 0 && RuneIsWord(next); proceed {
-			// at the start of input, boundary is prev if next is word
+		if index == 0 {
 
-		} else if proceed = start == m.InputLen() && RuneIsWord(prev); proceed {
-			// at the end of input, boundary is next if prev is word
+			// at start of input, boundary is to the left if this is a word
+			proceed = RuneIsWord(this)
 
-		} else if proceed = RuneIsWord(prev) && !RuneIsWord(next); proceed {
-			// in the middle of input, boundary is next if prev is word and next is not word
+		} else if index >= len(input) {
 
-		} else if proceed = !RuneIsWord(prev) && RuneIsWord(next); proceed {
-			// in the middle of input, boundary is prev if next is word and prev is not word
+			// at the end of input, boundary is to the right if this is a word
+			proceed = RuneIsWord(prev)
+
+		} else {
+
+			// somewhere in the middle of the string
+
+			if RuneIsWord(this) {
+				// this is a word, boundary is to the left
+				proceed = !RuneIsWord(prev)
+			} else {
+				// this is not a word, boundary is to the right
+				proceed = RuneIsWord(next)
+			}
 
 		}
 
-		if m.Flags().Negated() {
+		if scope.Negated() {
 			proceed = !proceed
 		}
 
@@ -99,9 +114,9 @@ func B() Matcher {
 
 // Z is a Matcher equivalent to the regexp [\z]
 func Z() Matcher {
-	return func(m MatchState) (next, keep bool) {
-		if next = m.Invalid(); m.Flags().Negated() {
-			next = !next
+	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+		if proceed = IndexInvalid(input, index); scope.Negated() {
+			proceed = !proceed
 		}
 		return
 	}

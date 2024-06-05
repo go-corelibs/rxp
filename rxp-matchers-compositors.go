@@ -20,20 +20,15 @@ package rxp
 // Or accepts Pattern, Matcher and string types and will panic on all others
 func Or(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+		if scope.Capture() {
+			captured = true
+		}
 		for _, matcher := range matchers {
-			clone := m.Clone()
-			if next, keep := matcher(clone); next {
-				if keep {
-					// apply cloned MatchState to actual
-					clone.Recycle()
-					return clone.Len(), true
-				}
-				// or consumes at least one rune, even if not keeping? nope?
-				clone.Recycle()
-				return 0, true
+			clone := scope.Clone()
+			if cons, capt, nega, next := matcher(clone, reps, input, index); next {
+				return cons, capt || captured, nega, !scope.Negated()
 			}
-			clone.Recycle()
 		}
 		return
 	}, flags...)
@@ -45,33 +40,28 @@ func Or(options ...interface{}) Matcher {
 // Not accepts Pattern, Matcher and string types and will panic on all others
 func Not(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
-		scope.SetNegated() // adding a ^ to the Not Matcher would cancel out the whole point of an explicit Not
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+		if IndexInvalid(input, index) {
+			return
+		}
+		negated = true
 
-		clone := m.Clone()
-		defer clone.Recycle()
-		if len(matchers) == 1 {
-			proceed, _ = matchers[0](clone)
-		} else {
-			// Not is an Or-like operation when there are multiple Matcher
-			// instances, first on proceeds
-			for _, matcher := range matchers {
-				iter := m.Clone()
-				if proceed, _ = matcher(clone); proceed {
-					iter.Apply(clone)
-					iter.Recycle()
-					break
-				}
-				iter.Recycle()
+		// Not is an Or-like operation when there are multiple Matcher
+		// instances, first one proceeds
+		for _, matcher := range matchers {
+			if consumed, _, _, proceed = matcher(scope.Clone(), reps, input, index); proceed {
+				break
 			}
 		}
 
-		// invert the positives
+		// negate the matcher results
 		if proceed = !proceed; proceed {
-			if consumed = clone.Len(); consumed == 0 {
+			if consumed == 0 {
+				// always consume at least one?
 				consumed = 1
 			}
 		}
+
 		return
 	}, flags...)
 }
@@ -82,21 +72,24 @@ func Not(options ...interface{}) Matcher {
 // applied
 func Group(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
-		clone := m.Clone() // accumulate matched runes
-		defer clone.Recycle()
-		for _, matcher := range matchers {
-			iter := m.CloneWith(clone.Len(), m.Reps())
-			if next, _ := matcher(iter); !next {
-				// entire group did not in fact match
-				iter.Recycle()
-				return 0, false
-			}
-			iter.Apply(clone)
-			iter.Recycle()
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+
+		if scope.Capture() {
+			captured = true
 		}
-		proceed = true
-		consumed = clone.Len()
+
+		for _, matcher := range matchers {
+			if cons, _, _, next := matcher(scope, reps, input, index+consumed); !next {
+				consumed = 0
+				return
+			} else {
+				consumed += cons
+			}
+		}
+
+		// successful match of entire group
+		proceed = !scope.Negated()
+
 		return
 	}, flags...)
 }

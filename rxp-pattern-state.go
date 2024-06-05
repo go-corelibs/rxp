@@ -15,16 +15,14 @@
 package rxp
 
 type cPatternState struct {
-	input   []rune      // original string input
-	index   int         // current match position (total runes consumed)
-	pattern Pattern     // list of fragments to satisfy as a match
-	matches matchGroups // total list of completed Pattern matches
+	input   []rune  // original string input
+	index   int     // current match position (total runes consumed)
+	pattern Pattern // list of fragments to satisfy as a match
+	capture []bool  // denotes corresponding matches are capture groups or not
+	matches Matches // list of matches (with matched capture groups)
 }
 
 func newPatternState(p Pattern, input []rune) *cPatternState {
-	//spConfig.Seed(spConfig.Scale() * 10)
-	//spFragment.Seed(spFragment.Scale() * 10)
-	//spMatchState.Seed(spMatchState.Scale() * 1)
 	return &cPatternState{
 		input:   input,
 		index:   0,
@@ -32,35 +30,20 @@ func newPatternState(p Pattern, input []rune) *cPatternState {
 	}
 }
 
-//func (s *cPatternState) find(count int) (matched [][][]rune) {
-//	if s.match(count) {
-//		for _, mm := range s.matches {
-//			list := [][]rune{{}} // first index is the complete match
-//			for _, m := range mm {
-//				this := s.input[m.start : m.start+m.this]
-//				list[0] = appendSlice(list[0], this...)
-//				if m.capture {
-//					list = appendSlice(list, this)
-//				}
-//			}
-//			matched = appendSlice(matched, list)
-//		}
-//	}
-//	return
-//}
-
 func (s *cPatternState) findString(count int) (matched [][]string) {
 	if s.match(count) {
-		for _, mm := range s.matches {
-			list := []string{""} // first index is the complete match
-			for _, m := range mm {
-				this := string(s.input[m.start : m.start+m.this])
-				list[0] += this
-				if m.flags.Capture() {
-					list = appendSlice(list, this)
+		for _, match := range s.matches {
+			if len(match) > 0 {
+				var list []string
+				for _, submatch := range match {
+					// first index is the complete match
+					list = appendSlice(
+						list,
+						string(s.input[submatch.Start():submatch.End()]),
+					)
 				}
+				matched = appendSlice(matched, list)
 			}
-			matched = appendSlice(matched, list)
 		}
 	}
 	return
@@ -69,94 +52,52 @@ func (s *cPatternState) findString(count int) (matched [][]string) {
 // match returns true if the state can process the Pattern at least count times
 func (s *cPatternState) match(count int) (matched bool) {
 
-	var lastIndex int          // track Matcher progress
+	var last int               // track Matcher progress
 	var completed int          // track completed Matcher count
 	required := len(s.pattern) // completed requirement
 
 	// while there is input to process
 	for s.index < len(s.input) {
 
-		var matches matchStates
+		start := s.index
+		var subMatches SubMatches
 
 		// for each matcher in the pattern
 		for _, matcher := range s.pattern {
-			m := newMatchState(s, s.index)
 			// call each matcher once, expecting matcher to progress the index
-			if next, keep := matcher(m); next && keep {
+			if cons, capt, _, proceed := matcher(gDefaultFlags, gDefaultReps, s.input, s.index); proceed {
+				if capt {
+					subMatches = appendSlice(subMatches, []int{s.index, s.index + cons})
+				}
+				s.index += cons
 				completed += 1
-				s.index += m.this
-				m.complete = true
-				matches = appendSlice(matches, m)
 				continue // continue the pattern
-			} else if next {
-				completed += 1
-				continue // did not progress though go to next
 			}
 			// pattern did not match correctly
 			break
 		}
 
 		if completed >= required {
-			if len(matches) > 0 {
-				s.matches = appendSlice(s.matches, matches)
+			if len(subMatches) > 0 {
+				s.matches = appendSlice(s.matches, append(SubMatches{SubMatch{start, s.index}}, subMatches...))
+			} else if start != s.index {
+				s.matches = appendSlice(s.matches, SubMatches{SubMatch{start, s.index}})
 			}
+			start = s.index
 			if count > 0 && count >= completed {
-				// early out, optimized for Pattern.Match() calls
-				// count is the developer requested total number of matches
+				// early out, optimized for Pattern.Segment() calls
+				// count is the developer requested total number of subMatches
 				return true
 			}
 		}
 
-		if lastIndex == s.index {
+		if last == s.index {
 			//	// pattern did not advance the index
 			s.index += 1
 		}
-		lastIndex = s.index
+		last = s.index
 
 	}
 
 	return len(s.matches) > 0
-}
-
-func (s *cPatternState) scan(count int) (fragments Fragments) {
-
-	if !s.match(count) {
-		// no matches
-		return Fragments{
-			newFragment(s, 0, len(s.input), nil),
-		}
-	}
-
-	fragments = make(Fragments, 0, (len(s.matches)+1)*4)
-	total := len(s.input)
-	var lastEnd int
-	for midx, m := range s.matches {
-		start, end := m.start(), m.end()
-
-		// include preceeding non-match fragments
-
-		if midx == 0 {
-			// this is the first match
-			if start > 0 {
-				// and it starts after the first input rune
-				fragments = appendSlice(fragments, newFragment(s, 0, start, nil))
-			}
-		} else {
-			// this is not the first match
-			if start-1 >= lastEnd {
-				// and there's a gap between the previous and this match
-				fragments = appendSlice(fragments, newFragment(s, lastEnd, start, nil))
-			}
-		}
-
-		fragments = appendSlice(fragments, newFragment(s, start, end, newMatch(s, m)))
-
-		lastEnd = end
-	}
-
-	// make sure any leftovers aren't actually left behind
-	if lastEnd < total {
-		fragments = appendSlice(fragments, newFragment(s, lastEnd, total, nil))
-	}
-	return
 }

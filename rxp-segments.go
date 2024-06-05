@@ -14,18 +14,27 @@
 
 package rxp
 
-import (
-	"testing"
+type Segments []Segment
 
-	c "github.com/smartystreets/goconvey/convey"
-)
+func (m Segments) Indexes() (indexes [][]int) {
+	for _, match := range m {
+		indexes = append(indexes, match.Index())
+	}
+	return
+}
 
-func TestMatchGroups(t *testing.T) {
-	c.Convey("start/end", t, func() {
+func (m Segments) String() string {
+	buf := getStringsBuilder()
+	defer putStringsBuilder(buf)
+	for _, match := range m {
+		buf.WriteString(match.String())
+	}
+	return buf.String()
+}
 
-		m := matchStates{}
-		c.So(m.start(), c.ShouldEqual, -1)
-		c.So(m.end(), c.ShouldEqual, -1)
-
-	})
+func (m Segments) Strings() (found []string) {
+	for _, match := range m {
+		found = appendSlice(found, match.String())
+	}
+	return
 }

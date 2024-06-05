@@ -199,9 +199,9 @@ func TestMatchersCompositors(t *testing.T) {
 			//{
 			//	input: "kebab-thing[10]",
 			//	pattern: Pattern{}.Caret("m").Group(
-			//		WrapFn(RuneIsALPHA),
+			//		WrapMatcher(RuneIsALPHA),
 			//		Or(Text("-", "+?"), W("+?")),
-			//		WrapFn(RuneIsALNUM, "*")).
+			//		WrapMatcher(RuneIsALNUM, "*")).
 			//		Text("[").
 			//		D("+", "c").
 			//		Text("]").
@@ -335,6 +335,60 @@ func TestMatchersCompositors(t *testing.T) {
 			//		Dollar(),
 			//	output: [][]string{{"thing[10]", "thing", "10"}},
 			//},
+
+			{
+				input: " func1  ",
+				pattern: Pattern{
+					Caret(),
+					S("*"),
+					Or(
+						D("+"),
+						Group(
+							Text("func"),
+							D("+"),
+						),
+						"c"),
+					S("*"),
+					Dollar(),
+				},
+				output: [][]string{{" func1  ", "func1"}},
+			},
+
+			{
+				input: " fun1  ",
+				pattern: Pattern{
+					Caret(),
+					S("*"),
+					Or(
+						D("+"),
+						Group(
+							Text("func"),
+							D("+"),
+						),
+						"c"),
+					S("*"),
+					Dollar(),
+				},
+				output: [][]string(nil),
+			},
+
+			{
+				input: " 1  ",
+				pattern: Pattern{
+					Caret(),
+					S("*"),
+					Or(
+						D("+"),
+						Group(
+							Text("func"),
+							D("+"),
+						),
+						"c"),
+					S("*"),
+					Dollar(),
+				},
+				output: [][]string{{" 1  ", "1"}},
+			},
 		} {
 			c.SoMsg(fmt.Sprintf("test #%d", idx),
 				test.pattern.FindAllStringSubmatch(test.input, -1),

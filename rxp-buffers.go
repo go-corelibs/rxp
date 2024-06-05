@@ -19,18 +19,34 @@ import (
 	"sync"
 )
 
-// appendSlice is a better option than stock append for high-volume operations
+// appendSlice is a slightly better option than stock append
 func appendSlice[V interface{}](slice []V, data ...V) []V {
 	m := len(slice)     // current length
 	n := m + len(data)  // needed length
 	if n > cap(slice) { // current cap size
 		grown := make([]V, (m+1)*2) // double the existing space
-		copy(grown, slice)          // populate grown
+		copy(grown, slice)          // transfer to new slice
 		slice = grown               // grown becomes slice
 	}
 	slice = slice[0:n]     // truncate in case too many present
 	copy(slice[m:n], data) // populate with data
 	return slice
+}
+
+var spStringsBuilder = newSyncPool(1, func() *strings.Builder {
+	return new(strings.Builder)
+})
+
+func getStringsBuilder() *strings.Builder {
+	buf := spStringsBuilder.Get()
+	buf.Reset()
+	return buf
+}
+
+func putStringsBuilder(buf *strings.Builder) {
+	if buf.Len() < 64000 {
+		spStringsBuilder.Put(buf)
+	}
 }
 
 var _ SyncPool[bool] = (*cSyncPool[bool])(nil)
@@ -102,24 +118,4 @@ func (p *cSyncPool[V]) Get() V {
 func (p *cSyncPool[V]) Put(v V) {
 	p.pool.Put(v)
 	p.ready += 1
-}
-
-// strings.Builder memory pool
-
-var (
-	spStringsBuilder = newSyncPool(1, func() *strings.Builder {
-		return new(strings.Builder)
-	})
-)
-
-func getStringsBuilder() *strings.Builder {
-	buf := spStringsBuilder.Get()
-	buf.Reset()
-	return buf
-}
-
-func putStringsBuilder(buf *strings.Builder) {
-	if buf.Len() < 64000 {
-		spStringsBuilder.Put(buf)
-	}
 }

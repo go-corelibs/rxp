@@ -35,16 +35,17 @@ func TestMatchers(t *testing.T) {
 
 		c.So(
 			Pattern{}.
-				Add(func(s MatchState) (stop, ok bool) {
-					s.Capture()
-					if prev, ok := s.Prev(); ok {
+				Add(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+					if prev, ok := IndexGet(input, index-1); ok {
 						if prev == 'o' {
-							if this, ok := s.This(); ok {
+							if this, ok := IndexGet(input, index); ok {
 								if this == 'n' {
-									if next, ok := s.Next(); ok {
+									if next, ok := IndexGet(input, index+1); ok {
 										if next == 'e' {
-											s.Consume(1)
-											return true, true
+											consumed += 1
+											captured = true
+											proceed = true
+											return
 										}
 									}
 								}
@@ -61,11 +62,10 @@ func TestMatchers(t *testing.T) {
 		p := Pattern{}.
 			Caret().
 			Text("/w/").
-			//Not(Text("/"), "+", "c").
 			Text("/", "^", "+", "c").
 			Text("/", "??").
 			Dollar()
-		for _, test := range []struct {
+		for idx, test := range []struct {
 			input  string
 			output [][]string
 		}{
@@ -74,7 +74,11 @@ func TestMatchers(t *testing.T) {
 			{"/w//", [][]string(nil)},
 			{"/nope/core/", [][]string(nil)},
 		} {
-			c.So(p.FindAllStringSubmatch(test.input, -1), c.ShouldEqual, test.output)
+			c.SoMsg(
+				fmt.Sprintf("test #%d", idx),
+				p.FindAllStringSubmatch(test.input, -1),
+				c.ShouldEqual, test.output,
+			)
 		}
 
 		// ^/b/([^/]+)/??$
@@ -84,7 +88,7 @@ func TestMatchers(t *testing.T) {
 			Not(Text("/"), "+", "c").
 			Text("/", "??").
 			Dollar()
-		for _, test := range []struct {
+		for idx, test := range []struct {
 			input  string
 			output [][]string
 		}{
@@ -93,7 +97,11 @@ func TestMatchers(t *testing.T) {
 			{"/b//", [][]string(nil)},
 			{"/nope/core/", [][]string(nil)},
 		} {
-			c.So(p.FindAllStringSubmatch(test.input, -1), c.ShouldEqual, test.output)
+			c.SoMsg(
+				fmt.Sprintf("test #%d", idx),
+				p.FindAllStringSubmatch(test.input, -1),
+				c.ShouldEqual, test.output,
+			)
 		}
 
 		// ^/build/([a-zA-Z0-9])?/??
@@ -109,7 +117,7 @@ func TestMatchers(t *testing.T) {
 		}{
 			{"/build/c", [][]string{{"/build/c", "c"}}},
 			{"/build/c/", [][]string{{"/build/c/", "c"}}},
-			{"/build//", [][]string{{"/build//"}}},
+			{"/build//", [][]string{{"/build//", ""}}},
 			{"/nope/core/", [][]string(nil)},
 		} {
 			c.So(p.FindAllStringSubmatch(test.input, -1), c.ShouldEqual, test.output)
@@ -126,12 +134,6 @@ func TestDot(t *testing.T) {
 			pattern Pattern
 			output  [][]string
 		}{
-			//{ // the .+? consumes the / and thus the final Matcher fails the match the pattern
-			//  // the problem is that + and * do not look to the next Matcher for advice?
-			//	input:   "/@func/",
-			//	pattern: Pattern{}.Text("@").Dot("+?").Text("/"),
-			//	output:  [][]string{{"@func/"}},
-			//},
 
 			// rxInvalidFuncName = regexp.MustCompile(`^\s*(\d+|func\d+)\s*$`)
 			{
@@ -141,7 +143,8 @@ func TestDot(t *testing.T) {
 					S("*").
 					Or("c",
 						D("+"),
-						Group(Text("func"),
+						Group(
+							Text("func"),
 							D("+"),
 						),
 					).
@@ -158,29 +161,20 @@ func TestDot(t *testing.T) {
 
 			{
 				input: "stuff @func/more/stuff",
-				pattern: Pattern{}.Add(func(m MatchState) (next, keep bool) {
-					this, okt := m.This()
-					if okt && this == '@' {
-						consume := 1
+				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+					// not capturing on purpose
+					this, okt := IndexGet(input, index)
+					if proceed = okt && this == '@'; proceed {
+						consumed = 1
 
-						input := m.Input()
 						total := len(input)
-						start := m.Index()
+						start := index
 
-						var found bool
-						for idx := start + consume; idx < total; idx += 1 {
-
-							consume += 1
-							if found = input[idx] == '/'; found {
+						for idx := start + consumed; idx < total; idx += 1 {
+							consumed += 1
+							if input[idx] == '/' {
 								break
 							}
-
-						}
-
-						if found {
-							//m.Capture()
-							m.Consume(consume)
-							return true, true
 						}
 					}
 					return

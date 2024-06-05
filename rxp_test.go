@@ -26,23 +26,22 @@ func xTextNoLoop(text string, flags ...string) Matcher {
 	runes := []rune(text)
 	needLen := len(runes)
 
-	return MakeRuneMatcher(func(scope Flags, m MatchState, start int, r rune) (consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		// scan ahead without consuming runes
 		// without any for looping
 		// this is marginally slower than the for-loop
 
-		if m.Has(start) {
+		if IndexReady(input, index) {
 
-			input := m.Input()
 			inputLen := len(input)
 
-			end := start + m.Len() + needLen
+			end := index + needLen
 			if proceed = end <= inputLen; !proceed {
 				return
 			}
 
-			if maybe := string(input[start:end]); scope.AnyCase() {
+			if maybe := string(input[index:end]); scope.AnyCase() {
 				proceed = strings.ToLower(text) == strings.ToLower(maybe)
 			} else {
 				proceed = text == maybe
@@ -97,7 +96,7 @@ func Benchmark_ScanString_Regexp(b *testing.B) {
 }
 
 func Benchmark_ScanString_Rxp(b *testing.B) {
-	_ = Pattern{FieldWord("c")}.ScanString(gTestDataRandomTxt).Strings()
+	_ = Pattern{FieldWord("c")}.ScanStrings(gTestDataRandomTxt).Strings()
 }
 
 func Benchmark_FindAllString_Regexp(b *testing.B) {
