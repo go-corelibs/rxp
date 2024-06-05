@@ -18,7 +18,7 @@ the methods on the Pattern list.
 
 # Notice
 
-This is the v0.2.x series with lots of scaffolding still present (stuff devs
+This is the v0.4.x series with a little scaffolding still present (stuff devs
 write just to get things working before refining and optimizing work).
 
 This version is being published for the purpose of documenting the evolution of
