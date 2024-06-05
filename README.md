@@ -18,9 +18,11 @@ the methods on the Pattern list.
 
 # Notice
 
-This is the v0.1.x series with major scaffolding still present, specifically
-the Config and MatchState structures. This version is being published for the
-purpose of documenting the evolution to the pending rxp v1.x release.
+This is the v0.1.x series with major scaffolding still present (stuff devs
+write just to get things working before refining and optimizing work).
+
+This version is being published for the purpose of documenting the evolution of
+rxp over time.
 
 # Installation
 
