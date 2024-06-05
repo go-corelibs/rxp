@@ -14,6 +14,10 @@
 
 package rxp
 
+import (
+	sync "github.com/go-corelibs/x-sync"
+)
+
 // Pattern is a list of Matcher functions, all of which must match, in the
 // order present, in order to consider the Pattern to match
 type Pattern []Matcher
@@ -113,8 +117,8 @@ func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 	if !s.match(-1) {
 		return input
 	}
-	buf := getStringsBuilder()
-	defer putStringsBuilder(buf)
+	buf := spStringBuilder.Get()
+	defer spStringBuilder.Put(buf)
 	var last int
 	for _, match := range s.matches {
 		if last < match.Start() {
@@ -144,8 +148,8 @@ func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 	if !s.match(-1) {
 		return input
 	}
-	buf := getStringsBuilder()
-	defer putStringsBuilder(buf)
+	buf := spStringBuilder.Get()
+	defer spStringBuilder.Put(buf)
 	var last int
 	for _, match := range s.matches {
 		if last < match.Start() {
@@ -183,7 +187,7 @@ func (p Pattern) ScanStrings(input string) (segments Segments) {
 	var last int
 	for _, match := range s.matches {
 		if last < match.Start() {
-			segments = appendSlice[Segment](segments, &cSegment{
+			segments = sync.Append[Segment](segments, &cSegment{
 				input:   runes,
 				matched: false,
 				matches: SubMatches{SubMatch{last, match.Start()}},
@@ -191,7 +195,7 @@ func (p Pattern) ScanStrings(input string) (segments Segments) {
 		}
 		last = match.End()
 
-		segments = appendSlice[Segment](segments, &cSegment{
+		segments = sync.Append[Segment](segments, &cSegment{
 			input:   runes,
 			matched: true,
 			matches: match,
@@ -199,7 +203,7 @@ func (p Pattern) ScanStrings(input string) (segments Segments) {
 	}
 
 	if last < len(s.input) {
-		segments = appendSlice[Segment](segments, &cSegment{
+		segments = sync.Append[Segment](segments, &cSegment{
 			input:   runes,
 			matched: false,
 			matches: SubMatches{SubMatch{last, len(s.input)}},

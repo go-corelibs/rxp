@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/go-corelibs/values"
+	sync "github.com/go-corelibs/x-sync"
 )
 
 var _ Segment = (*cSegment)(nil)
@@ -71,7 +72,7 @@ func (r *cSegment) Match() bool {
 func (r *cSegment) Runes() (runes []rune) {
 
 	for _, m := range r.matches {
-		runes = appendSlice(runes, r.input[m.Start():m.End()]...)
+		runes = sync.Append(runes, r.input[m.Start():m.End()]...)
 	}
 
 	return
