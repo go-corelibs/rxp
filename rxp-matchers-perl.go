@@ -72,14 +72,12 @@ func Dot(flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if r, ok := IndexGet(input, index); ok {
-			if proceed = r != '\n' || scope.DotNL(); scope.Negated() {
-				proceed = !proceed
-			}
+			proceed = r != '\n' || scope.DotNL()
 			if proceed {
 				consumed = 1
 			}
-		} else if scope.Negated() {
-			proceed = true
+		} else {
+			proceed = scope.Negated()
 		}
 
 		return
