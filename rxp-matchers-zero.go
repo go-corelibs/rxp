@@ -15,7 +15,7 @@
 package rxp
 
 // Caret creates a Matcher equivalent to the regexp caret [^]
-func Caret(options ...string) Matcher {
+func Caret(flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
@@ -33,11 +33,11 @@ func Caret(options ...string) Matcher {
 			proceed = !proceed
 		}
 		return
-	}, options...)
+	}, flags...)
 }
 
 // Dollar creates a Matcher equivalent to the regexp [$]
-func Dollar(options ...string) Matcher {
+func Dollar(flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
@@ -59,7 +59,7 @@ func Dollar(options ...string) Matcher {
 			proceed = !proceed
 		}
 		return
-	}, options...)
+	}, flags...)
 }
 
 // A creates a Matcher equivalent to the regexp [\A]
