@@ -23,12 +23,13 @@ func Caret(flags ...string) Matcher {
 			prev, ok := IndexGet(input, index-1)
 			// if there is no previous character ~or~ the previous is a newline
 			if proceed = !ok || prev == '\n'; scope.Negated() {
+				// check negation before return
 				proceed = !proceed
 			}
 			return
 		}
 
-		// start of input
+		// check only for the start of input
 		if proceed = index == 0; scope.Negated() {
 			proceed = !proceed
 		}
