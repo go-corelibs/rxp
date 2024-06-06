@@ -60,7 +60,7 @@ func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
 func MakeMatcher(match Matcher, flags ...string) Matcher {
 	cfgReps, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 		if cfgReps != nil {
 			reps = cfgReps
 		}

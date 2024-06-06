@@ -20,7 +20,7 @@ package rxp
 func FieldWord(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, _ Reps, input []rune, index int, matches SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 		if IndexInvalid(input, index) {
 			proceed = scope.Negated()
 			return
@@ -72,7 +72,7 @@ func FieldWord(flags ...string) Matcher {
 func FieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 		if IndexInvalid(input, index) {
 			proceed = scope.Negated()
 			return
@@ -124,7 +124,7 @@ func FieldKey(flags ...string) Matcher {
 func Keyword(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 		if IndexInvalid(input, index) {
 			proceed = scope.Negated()
 			return

@@ -68,7 +68,7 @@ func Dollar(flags ...string) Matcher {
 func A(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 		if proceed = index == 0; scope.Negated() {
 			proceed = !proceed
 		}
@@ -80,7 +80,7 @@ func A(flags ...string) Matcher {
 func B(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 
 		this, _ := IndexGet(input, index)
 		next, _ := IndexGet(input, index+1)
@@ -125,7 +125,7 @@ func B(flags ...string) Matcher {
 func Z(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 		if proceed = IndexInvalid(input, index); scope.Negated() {
 			proceed = !proceed
 		}
@@ -143,7 +143,7 @@ func BackRef(gid int, flags ...string) Matcher {
 	}
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
-		scope = scope.Merge(cfg)
+		scope |= cfg
 		captured = scope.Capture()
 
 		if count := len(sm); count == 0 || gid > count { // gid > count is correct because gid is 1-indexed

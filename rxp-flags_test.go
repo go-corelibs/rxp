@@ -96,7 +96,7 @@ func TestFlags(t *testing.T) {
 		c.So(other.String(), c.ShouldEqual, `^ms`)
 		clone = clone.Merge(other)
 		c.So(clone.String(), c.ShouldEqual, `^msic`)
-		nop := clone.Merge(nil)
+		nop := clone.Merge(0)
 		c.So(nop.String(), c.ShouldEqual, `^msic`)
 
 	})

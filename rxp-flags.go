@@ -20,50 +20,19 @@ import (
 	"strings"
 )
 
-var _ Flags = cFlags(0)
-
-type cFlags uint64
-
-type Flags interface {
-	Negated() bool
-	Multiline() bool
-	DotNL() bool
-	AnyCase() bool
-	Capture() bool
-	Less() bool
-	ZeroOrMore() bool
-	ZeroOrOne() bool
-	OneOrMore() bool
-
-	SetNegated() Flags
-	SetCapture() Flags
-
-	Clone() Flags
-	Merge(other Flags) Flags
-	String() string
-
-	private(f *cFlags)
-}
+type Flags uint16
 
 const (
-	fDefault cFlags = 0
-	fNegated cFlags = 1 << iota
-	fMultiline
-	fDotNL
-	fAnyCase
-	fCapture
-	fZeroOrMore
-	fZeroOrOne
-	fOneOrMore
-	fLess
-)
-
-func mkDefaultFlags() cFlags {
-	return fDefault
-}
-
-var (
-	gDefaultFlags = fDefault
+	DefaultFlags Flags = 0
+	NegatedFlag  Flags = 1 << iota
+	MultilineFlag
+	DotNewlineFlag
+	AnyCaseFlag
+	CaptureFlag
+	ZeroOrMoreFlag
+	ZeroOrOneFlag
+	OneOrMoreFlag
+	LessFlag
 )
 
 // ParseOptions accepts Pattern, Matcher and string options and recasts them
@@ -126,7 +95,7 @@ func ParseOptions(options ...interface{}) (pattern Pattern, flags []string, argv
 //
 // Any parsing errors will result in a runtime panic
 func ParseFlags(flags ...string) (Reps, Flags) {
-	f := mkDefaultFlags()
+	var f Flags
 	var reps Reps
 
 	for _, flag := range flags {
@@ -155,74 +124,71 @@ func ParseFlags(flags ...string) (Reps, Flags) {
 	return reps, f
 }
 
-func (f cFlags) set(flag cFlags) cFlags {
+func (f Flags) set(flag Flags) Flags {
 	return f | flag
 }
 
-func (f cFlags) unset(flag cFlags) cFlags {
+func (f Flags) unset(flag Flags) Flags {
 	return f &^ flag
 }
 
-func (f cFlags) has(flag cFlags) bool {
+func (f Flags) has(flag Flags) bool {
 	return f&flag == flag
 }
 
-func (f cFlags) Negated() bool {
-	return f.has(fNegated)
+func (f Flags) Negated() bool {
+	return f.has(NegatedFlag)
 }
 
-func (f cFlags) Multiline() bool {
-	return f.has(fMultiline)
+func (f Flags) Multiline() bool {
+	return f.has(MultilineFlag)
 }
 
-func (f cFlags) DotNL() bool {
-	return f.has(fDotNL)
+func (f Flags) DotNL() bool {
+	return f.has(DotNewlineFlag)
 }
 
-func (f cFlags) AnyCase() bool {
-	return f.has(fAnyCase)
+func (f Flags) AnyCase() bool {
+	return f.has(AnyCaseFlag)
 }
 
-func (f cFlags) Capture() bool {
-	return f.has(fCapture)
+func (f Flags) Capture() bool {
+	return f.has(CaptureFlag)
 }
 
-func (f cFlags) Less() bool {
-	return f.has(fLess)
+func (f Flags) Less() bool {
+	return f.has(LessFlag)
 }
 
-func (f cFlags) ZeroOrMore() bool {
-	return f.has(fZeroOrMore)
+func (f Flags) ZeroOrMore() bool {
+	return f.has(ZeroOrMoreFlag)
 }
 
-func (f cFlags) ZeroOrOne() bool {
-	return f.has(fZeroOrOne)
+func (f Flags) ZeroOrOne() bool {
+	return f.has(ZeroOrOneFlag)
 }
 
-func (f cFlags) OneOrMore() bool {
-	return f.has(fOneOrMore)
+func (f Flags) OneOrMore() bool {
+	return f.has(OneOrMoreFlag)
 }
 
-func (f cFlags) SetNegated() Flags {
-	return f.set(fNegated)
+func (f Flags) SetNegated() Flags {
+	return f.set(NegatedFlag)
 }
 
-func (f cFlags) SetCapture() Flags {
-	return f.set(fCapture)
+func (f Flags) SetCapture() Flags {
+	return f.set(CaptureFlag)
 }
 
-func (f cFlags) Clone() Flags {
+func (f Flags) Clone() Flags {
 	return f
 }
 
-func (f cFlags) Merge(other Flags) Flags {
-	if o, ok := other.(cFlags); ok {
-		return f | o
-	}
-	return f
+func (f Flags) Merge(other Flags) Flags {
+	return f | other
 }
 
-func (f cFlags) String() string {
+func (f Flags) String() string {
 	var buf strings.Builder
 	switch {
 	case f.ZeroOrMore():
@@ -253,37 +219,37 @@ func (f cFlags) String() string {
 	return buf.String()
 }
 
-func (f cFlags) private(_ *cFlags) {}
+func (f Flags) private(_ Flags) {}
 
-func (f cFlags) parseFlag(lower rune) (flags cFlags, reps Reps, ok bool) {
+func (f Flags) parseFlag(lower rune) (flags Flags, reps Reps, ok bool) {
 	flags = f
 	switch lower {
 	case '^':
-		flags = flags.set(fNegated)
+		flags = flags.set(NegatedFlag)
 
 	case 'm':
-		flags = flags.set(fMultiline)
+		flags = flags.set(MultilineFlag)
 
 	case 's':
-		flags = flags.set(fDotNL)
+		flags = flags.set(DotNewlineFlag)
 
 	case 'i':
-		flags = flags.set(fAnyCase)
+		flags = flags.set(AnyCaseFlag)
 
 	case 'c':
-		flags = flags.set(fCapture)
+		flags = flags.set(CaptureFlag)
 
 	case '*':
 		reps = Reps{-1, -1}
-		flags = flags.unset(fLess).set(fZeroOrMore)
+		flags = flags.unset(LessFlag).set(ZeroOrMoreFlag)
 
 	case '+':
 		reps = Reps{1, -1}
-		flags = flags.unset(fLess).set(fOneOrMore)
+		flags = flags.unset(LessFlag).set(OneOrMoreFlag)
 
 	case '?':
 		reps = Reps{0, 1}
-		flags = flags.unset(fLess).set(fZeroOrOne)
+		flags = flags.unset(LessFlag).set(ZeroOrOneFlag)
 
 	case 0, ' ':
 		// nop is ok
@@ -296,7 +262,7 @@ func (f cFlags) parseFlag(lower rune) (flags cFlags, reps Reps, ok bool) {
 	return flags, reps, true
 }
 
-func (f cFlags) parseFlags(input []rune) (flags cFlags, reps Reps, ok bool) {
+func (f Flags) parseFlags(input []rune) (flags Flags, reps Reps, ok bool) {
 	flags = f
 
 	for idx := 0; idx < len(input); idx += 1 {
@@ -310,32 +276,32 @@ func (f cFlags) parseFlags(input []rune) (flags cFlags, reps Reps, ok bool) {
 
 		case '*':
 			reps = Reps{-1, -1}
-			flags = flags.set(fZeroOrMore)
+			flags = flags.set(ZeroOrMoreFlag)
 			if next == '?' {
 				idx += 1
-				flags = flags.set(fLess)
+				flags = flags.set(LessFlag)
 			} else {
-				flags = flags.unset(fLess)
+				flags = flags.unset(LessFlag)
 			}
 
 		case '+':
 			reps = Reps{1, -1}
-			flags = flags.set(fOneOrMore)
+			flags = flags.set(OneOrMoreFlag)
 			if next == '?' {
 				idx += 1
-				flags = flags.set(fLess)
+				flags = flags.set(LessFlag)
 			} else {
-				flags = flags.unset(fLess)
+				flags = flags.unset(LessFlag)
 			}
 
 		case '?':
 			reps = Reps{0, 1}
-			flags = flags.set(fZeroOrOne)
+			flags = flags.set(ZeroOrOneFlag)
 			if next == '?' {
 				idx += 1
-				flags = flags.set(fLess)
+				flags = flags.set(LessFlag)
 			} else {
-				flags = flags.unset(fLess)
+				flags = flags.unset(LessFlag)
 			}
 
 		case '{':
@@ -368,7 +334,7 @@ func (f cFlags) parseFlags(input []rune) (flags cFlags, reps Reps, ok bool) {
 	return flags, reps, true
 }
 
-func (f cFlags) parseRangeFlag(index int, input []rune) (idx int, flags cFlags, reps Reps, ok bool) {
+func (f Flags) parseRangeFlag(index int, input []rune) (idx int, flags Flags, reps Reps, ok bool) {
 	idx = index
 	flags = f
 
@@ -384,7 +350,7 @@ func (f cFlags) parseRangeFlag(index int, input []rune) (idx int, flags cFlags, 
 	if jdx+1 < len(input) {
 		if input[jdx+1] == '?' {
 			jdx += 1
-			flags = flags.set(fLess)
+			flags = flags.set(LessFlag)
 		}
 	}
 

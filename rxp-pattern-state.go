@@ -65,7 +65,7 @@ func (s *cPatternState) match(count int) (matched bool) {
 		// for each matcher in the pattern
 		for _, matcher := range s.pattern {
 			// call each matcher once, expecting matcher to progress the index
-			if cons, capt, _, proceed := matcher(gDefaultFlags, gDefaultReps, s.input, s.index, subMatches); proceed {
+			if cons, capt, _, proceed := matcher(DefaultFlags, gDefaultReps, s.input, s.index, subMatches); proceed {
 				if capt {
 					subMatches = appendSlice(subMatches, []int{s.index, s.index + cons})
 				}
