@@ -106,59 +106,57 @@ func (p Pattern) FindIndex(input string) (found []int) {
 }
 
 func (p Pattern) ReplaceAllString(input string, repl Replace) string {
-	if len(p) == 0 {
-		return input
-	}
-	s := newPatternState(p, []rune(input))
-	if !s.match(-1) {
-		return input
-	}
-	buf := spStringBuilder.Get()
-	defer spStringBuilder.Put(buf)
-	var last int
-	for _, match := range s.matches {
-		if last < match.Start() {
-			buf.WriteString(string(s.input[last:match.Start()]))
+	if len(p) > 0 {
+		s := newPatternState(p, []rune(input))
+		if s.match(-1) {
+			buf := spStringBuilder.Get()
+			defer spStringBuilder.Put(buf)
+			var last int
+			for _, match := range s.matches {
+				if last < match.Start() {
+					buf.WriteString(string(s.input[last:match.Start()]))
+				}
+				last = match.End()
+				for _, rpl := range repl {
+					buf.WriteString(rpl(&cSegment{
+						input:   s.input,
+						matched: true,
+						matches: match,
+					}))
+				}
+			}
+			if last < len(s.input) {
+				buf.WriteString(string(s.input[last:]))
+			}
+			s.matches = nil
+			return buf.String()
 		}
-		last = match.End()
-		for _, rpl := range repl {
-			buf.WriteString(rpl(&cSegment{
-				input:   s.input,
-				matched: true,
-				matches: match,
-			}))
-		}
 	}
-	if last < len(s.input) {
-		buf.WriteString(string(s.input[last:]))
-	}
-	s.matches = nil
-	return buf.String()
+	return input
 }
 
 func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
-	if len(p) == 0 {
-		return input
-	}
-	s := newPatternState(p, []rune(input))
-	if !s.match(-1) {
-		return input
-	}
-	buf := spStringBuilder.Get()
-	defer spStringBuilder.Put(buf)
-	var last int
-	for _, match := range s.matches {
-		if last < match.Start() {
-			buf.WriteString(string(s.input[last:match.Start()]))
+	if len(p) > 0 {
+		s := newPatternState(p, []rune(input))
+		if s.match(-1) {
+			buf := spStringBuilder.Get()
+			defer spStringBuilder.Put(buf)
+			var last int
+			for _, match := range s.matches {
+				if last < match.Start() {
+					buf.WriteString(string(s.input[last:match.Start()]))
+				}
+				last = match.End()
+				buf.WriteString(repl(string(s.input[match.Start():match.End()])))
+			}
+			if last < len(s.input) {
+				buf.WriteString(string(s.input[last:]))
+			}
+			s.matches = nil
+			return buf.String()
 		}
-		last = match.End()
-		buf.WriteString(repl(string(s.input[match.Start():match.End()])))
 	}
-	if last < len(s.input) {
-		buf.WriteString(string(s.input[last:]))
-	}
-	s.matches = nil
-	return buf.String()
+	return input
 }
 
 func (p Pattern) ScanStrings(input string) (segments Segments) {
