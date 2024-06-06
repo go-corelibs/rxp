@@ -186,7 +186,7 @@ func Keyword(flags ...string) Matcher {
 			}
 
 			// if the last rune is [-_], rewind to last [^-_]
-			if consumed > 1 && index+consumed-1 < total {
+			if index+consumed-1 < total {
 				for consumed > 1 && RuneIsDashUnder(input[index+consumed-1]) {
 					consumed -= 1
 				}
