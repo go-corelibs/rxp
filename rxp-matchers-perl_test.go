@@ -161,13 +161,13 @@ func TestMatchersClassPerl(t *testing.T) {
 
 			{
 				input:   "",
-				pattern: Pattern{}.Class(ASCII),
+				pattern: Pattern{}.NamedClass(ASCII),
 				output:  [][]string(nil),
 			},
 
 			{
 				input:   "a",
-				pattern: Pattern{}.Class(ASCII, "c"),
+				pattern: Pattern{}.NamedClass(ASCII, "c"),
 				output:  [][]string{{"a", "a"}},
 			},
 		} {

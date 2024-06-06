@@ -130,7 +130,7 @@ func (p Pattern) Xdigit(flags ...string) Pattern {
 	return append(p, Xdigit(flags...))
 }
 
-func (p Pattern) Class(name AsciiNames, flags ...string) Pattern {
+func (p Pattern) NamedClass(name AsciiNames, flags ...string) Pattern {
 	return append(p, NamedClass(name, flags...))
 }
 
