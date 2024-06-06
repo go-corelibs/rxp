@@ -50,16 +50,16 @@ func (p Pattern) Dollar(flags ...string) Pattern {
 	return append(p, Dollar(flags...))
 }
 
-func (p Pattern) A() Pattern {
-	return append(p, A())
+func (p Pattern) A(flags ...string) Pattern {
+	return append(p, A(flags...))
 }
 
-func (p Pattern) B() Pattern {
-	return append(p, B())
+func (p Pattern) B(flags ...string) Pattern {
+	return append(p, B(flags...))
 }
 
-func (p Pattern) Z() Pattern {
-	return append(p, Z())
+func (p Pattern) Z(flags ...string) Pattern {
+	return append(p, Z(flags...))
 }
 
 func (p Pattern) D(flags ...string) Pattern {

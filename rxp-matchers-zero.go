@@ -63,8 +63,10 @@ func Dollar(flags ...string) Matcher {
 }
 
 // A creates a Matcher equivalent to the regexp [\A]
-func A() Matcher {
+func A(flags ...string) Matcher {
+	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+		scope = scope.Merge(cfg)
 		if proceed = index == 0; scope.Negated() {
 			proceed = !proceed
 		}
@@ -73,8 +75,10 @@ func A() Matcher {
 }
 
 // B creates a Matcher equivalent to the regexp [\b]
-func B() Matcher {
+func B(flags ...string) Matcher {
+	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+		scope = scope.Merge(cfg)
 
 		this, _ := IndexGet(input, index)
 		next, _ := IndexGet(input, index+1)
@@ -113,8 +117,10 @@ func B() Matcher {
 }
 
 // Z is a Matcher equivalent to the regexp [\z]
-func Z() Matcher {
+func Z(flags ...string) Matcher {
+	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+		scope = scope.Merge(cfg)
 		if proceed = IndexInvalid(input, index); scope.Negated() {
 			proceed = !proceed
 		}
