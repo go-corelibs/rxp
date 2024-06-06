@@ -57,7 +57,7 @@ func (s *cPatternState) match(count int) (matched bool) {
 	required := len(s.pattern) // completed requirement
 
 	// while there is input to process
-	for s.index < len(s.input) {
+	for s.index <= len(s.input) {
 
 		start := s.index
 		var subMatches SubMatches
