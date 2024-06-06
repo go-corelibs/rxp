@@ -42,6 +42,7 @@ func Not(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
 	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if IndexInvalid(input, index) {
+			proceed = scope.Negated()
 			return
 		}
 		negated = true
