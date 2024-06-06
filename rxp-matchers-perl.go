@@ -207,3 +207,56 @@ func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 		return
 	}, flags...)
 }
+
+// R creates a Matcher equivalent to regexp character class ranges such as:
+// [xyza-f] where x, y and z are individual runes to accept and a-f is the
+// inclusive range of letters from lowercase a to lowercase f to accept
+//
+// Note: do not include the [] brackets unless the intent is to actually accept
+// those characters
+func R(characters string, flags ...string) Matcher {
+	var runes []rune
+	var ranges [][]rune
+	chars := []rune(characters)
+	charLen := len(chars)
+
+	for idx, this := range chars {
+		if idx == 0 && this == '-' {
+			// first dash is literal dash
+			runes = append(runes, this)
+			continue
+		}
+		if idx+2 < charLen {
+			// range requires a total of three, the low and high runes and
+			// a dash separator
+			if chars[idx+1] == '-' {
+				// next is a dash
+				ranges = append(ranges, []rune{chars[idx+1], chars[idx+2]})
+				continue
+			}
+		}
+		runes = append(runes, this)
+	}
+
+	hasRunes, hasRanges := len(runes) > 0, len(ranges) > 0
+	return WrapMatcher(func(r rune) bool {
+
+		if hasRanges {
+			for _, check := range ranges {
+				if check[0] <= r && r <= check[1] {
+					return true
+				}
+			}
+		}
+
+		if hasRunes {
+			for _, check := range runes {
+				if check == r {
+					return true
+				}
+			}
+		}
+
+		return false
+	}, flags...)
+}
