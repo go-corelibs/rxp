@@ -172,7 +172,7 @@ func Benchmark_Replace_ToUpper_Regexp(b *testing.B) {
 
 func Benchmark_Replace_ToUpper_Rxp(b *testing.B) {
 	for i := 1; i < 10; i += 1 {
-		_ = Pattern{}.Range(unicode.L, "+", "m", "s", "c").
+		_ = Pattern{}.RangeTable(unicode.L, "+", "m", "s", "c").
 			ReplaceAllString(gTestDataRandomTxt, Replace{}.ToUpper())
 	}
 }

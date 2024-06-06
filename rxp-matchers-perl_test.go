@@ -193,13 +193,13 @@ func TestMatchersClassPerl(t *testing.T) {
 
 			{
 				input:   "",
-				pattern: Pattern{}.Range(unicode.Common),
+				pattern: Pattern{}.RangeTable(unicode.Common),
 				output:  [][]string(nil),
 			},
 
 			{
 				input:   "a",
-				pattern: Pattern{}.Range(unicode.Latin, "c"),
+				pattern: Pattern{}.RangeTable(unicode.Latin, "c"),
 				output:  [][]string{{"a", "a"}},
 			},
 		} {

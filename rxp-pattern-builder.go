@@ -134,6 +134,6 @@ func (p Pattern) Class(name AsciiNames, flags ...string) Pattern {
 	return append(p, NamedClass(name, flags...))
 }
 
-func (p Pattern) Range(table *unicode.RangeTable, flags ...string) Pattern {
+func (p Pattern) RangeTable(table *unicode.RangeTable, flags ...string) Pattern {
 	return append(p, IsUnicodeRange(table, flags...))
 }
