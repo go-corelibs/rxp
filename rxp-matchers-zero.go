@@ -42,13 +42,10 @@ func Dollar(flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
-			// end of input or end of line
-			// if there is no this character ~or~ this is a newline
-			if proceed = IndexEnd(input, index); proceed {
-				return
-			}
+			// look for: end of input or end of line
 			r, ok := IndexGet(input, index)
-			if proceed = ok && r == '\n'; scope.Negated() {
+			if proceed = !ok || r == '\n'; scope.Negated() {
+				// check negation before return
 				proceed = !proceed
 			}
 			// matched on the newline
@@ -102,9 +99,12 @@ func B(flags ...string) Matcher {
 			if RuneIsWord(this) {
 				// this is a word, boundary is to the left
 				proceed = !RuneIsWord(prev)
-			} else {
-				// this is not a word, boundary is to the right
+			} else if next > 0 {
+				// next is not null, boundary is to the right
 				proceed = RuneIsWord(next)
+			} else if prev > 0 {
+				// prev is not null, boundary is to the left
+				proceed = RuneIsWord(prev)
 			}
 
 		}
