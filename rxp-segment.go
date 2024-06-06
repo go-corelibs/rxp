@@ -50,18 +50,6 @@ type cSegment struct {
 	complete *string
 }
 
-// newMatch will panic on nil matches
-func newMatch(input []rune, matches SubMatches) *cSegment {
-	if len(matches) > 0 {
-		return &cSegment{
-			input:    input,
-			matches:  matches,
-			complete: nil,
-		}
-	}
-	panic("programmer error - nil matches received")
-}
-
 func (r *cSegment) private(_ *cSegment) {}
 
 func (r *cSegment) Match() bool {
