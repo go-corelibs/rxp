@@ -20,18 +20,13 @@ package rxp
 func FieldWord(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, _ Reps, input []rune, index int, matches SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		if IndexInvalid(input, index) {
-			return
-		}
 		scope = scope.Merge(cfg)
-
-		var this rune
-		if this, proceed = IndexGet(input, index); !proceed {
-			if scope.Negated() {
-				proceed = true
-			}
+		if IndexInvalid(input, index) {
+			proceed = scope.Negated()
 			return
 		}
+
+		this, _ := IndexGet(input, index) // this will never fail due to previous IndexInvalid check
 
 		if proceed = RuneIsALNUM(this); proceed {
 			// first rune matched the first range [a-zA-Z]
