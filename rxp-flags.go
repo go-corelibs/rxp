@@ -40,7 +40,6 @@ type Flags interface {
 
 	Clone() Flags
 	Merge(other Flags) Flags
-	Equal(other Flags) bool
 	String() string
 
 	private(f *cFlags)
@@ -221,13 +220,6 @@ func (f cFlags) Merge(other Flags) Flags {
 		return f | o
 	}
 	return f
-}
-
-func (f cFlags) Equal(other Flags) bool {
-	if o, ok := other.(cFlags); ok {
-		return f == o
-	}
-	return false
 }
 
 func (f cFlags) String() string {
