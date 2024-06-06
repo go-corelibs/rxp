@@ -4,6 +4,7 @@ go 1.22.3
 
 require (
 	github.com/go-corelibs/values v1.2.0
+	github.com/go-corelibs/x-sync v0.1.0
 	github.com/smartystreets/goconvey v1.8.1
 )
 

@@ -2,6 +2,8 @@ github.com/go-corelibs/maths v1.2.0 h1:sQKBsZAhmSTq43XHZo7IyUlCJekgFhJHz/jc6355G
 github.com/go-corelibs/maths v1.2.0/go.mod h1:AGg83e+nOjEqCvfrwDMGTu/DvSrs0bWLZ1IZc/fN5RM=
 github.com/go-corelibs/values v1.2.0 h1:W+iktCWF3Ysdx12ir8Xve/oF00T4+5gwdWs0F3VC1vc=
 github.com/go-corelibs/values v1.2.0/go.mod h1:zhlreI/N+FYNyTMXofbdWUIM5Pjj12oeYXOecFAozgs=
+github.com/go-corelibs/x-sync v0.1.0 h1:ABBFNAqqn5U1fLnJPjjMl6GXis2VRY6BaeVUPjbdQYw=
+github.com/go-corelibs/x-sync v0.1.0/go.mod h1:Kxql+YdmFUCdM/wV3Cctzrp0uAlUnBAz3Xhcq+Ulr4E=
 github.com/go-corelibs/x-text v0.14.2 h1:McEvF3wNe6ADgkoCDRfJlM+b5r4RazbZku1PyTObpuw=
 github.com/go-corelibs/x-text v0.14.2/go.mod h1:To1kw/3Z0HhBG8KrYsCdWZi3vi+JFg9/qDc9FpLR7dg=
 github.com/gohobby/assert v0.0.0-20211104143739-08694b1ea893 h1:wFd4Td0Bky4UbXOtyMu2QpYVjRQ+GHr34Z95ED7NtcI=
