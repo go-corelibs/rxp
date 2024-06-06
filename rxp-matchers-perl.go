@@ -215,20 +215,29 @@ func R(characters string, flags ...string) Matcher {
 	var runes []rune
 	var ranges [][]rune
 	chars := []rune(characters)
-	charLen := len(chars)
+	charsLen := len(chars)
 
-	for idx, this := range chars {
+	// parse the input characters
+	for idx := 0; idx < charsLen; idx++ {
+		this := chars[idx]
 		if idx == 0 && this == '-' {
 			// first dash is literal dash
 			runes = append(runes, this)
 			continue
 		}
-		if idx+2 < charLen {
+		if idx+2 < charsLen {
 			// range requires a total of three, the low and high runes and
 			// a dash separator
 			if chars[idx+1] == '-' {
 				// next is a dash
-				ranges = append(ranges, []rune{chars[idx+1], chars[idx+2]})
+				if chars[idx] > chars[idx+2] {
+					// the low rune is greater than the high rune
+					// allow these mistakes? hmm...
+					ranges = append(ranges, []rune{chars[idx+2], chars[idx]})
+				} else {
+					ranges = append(ranges, []rune{chars[idx], chars[idx+2]})
+				}
+				idx += 2 // one for the dash and one for the other rune
 				continue
 			}
 		}
