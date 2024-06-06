@@ -70,7 +70,7 @@ func Not(options ...interface{}) Matcher {
 // Group processes the list of Matcher instances, in the order they were
 // given, and stops at the first one that does not match, discarding any
 // consumed runes. If all Matcher calls succeed, all consumed runes are
-// applied
+// accepted together as this group (sub-sub-matches are not a thing)
 func Group(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
 	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
