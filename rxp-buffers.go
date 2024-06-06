@@ -15,7 +15,25 @@
 package rxp
 
 import (
-	"github.com/go-corelibs/x-sync"
+	sync "github.com/go-corelibs/x-sync"
 )
 
+// spStringBuilder from go-corelibs/x-sync does not seem to impact performance
+// to the same extent as is the case of sync.Append
 var spStringBuilder = sync.NewStringBuilderPool(1)
+
+// appendSlice is a slightly better option than stock append and using the one
+// from go-corelibs/x-sync crosses the package boundary and actually makes a
+// difference in must-fast-path scenarios
+func appendSlice[V interface{}](slice []V, data ...V) []V {
+	m := len(slice)     // current length
+	n := m + len(data)  // needed length
+	if n > cap(slice) { // current cap size
+		grown := make([]V, (m+1)*2) // double the existing space
+		copy(grown, slice)          // transfer to new slice
+		slice = grown               // grown becomes slice
+	}
+	slice = slice[0:n]     // truncate in case too many present
+	copy(slice[m:n], data) // populate with data
+	return slice
+}
