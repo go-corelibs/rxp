@@ -135,6 +135,32 @@ func TestPattern(t *testing.T) {
 
 	})
 
+	c.Convey("FindAllStringSubmatchIndex", t, func() {
+
+		for idx, test := range []struct {
+			input   string
+			pattern Pattern
+			count   int
+			output  Matches
+		}{
+
+			{input: "", pattern: nil, count: -1, output: Matches(nil)},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: 1, output: Matches{{{0, 1}, {0, 1}}}},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: Matches{
+				{{0, 1}, {0, 1}},
+				{{1, 2}, {1, 2}},
+			}},
+		} {
+			c.SoMsg(
+				fmt.Sprintf("test #%d", idx),
+				test.pattern.FindAllStringSubmatchIndex(test.input, test.count),
+				c.ShouldEqual,
+				test.output,
+			)
+		}
+
+	})
+
 	c.Convey("FindAllString", t, func() {
 
 		for idx, test := range []struct {

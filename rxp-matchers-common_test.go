@@ -32,6 +32,12 @@ func TestMatchersCommon(t *testing.T) {
 		}{
 			{
 				input:   "a' ",
+				pattern: Pattern{}.Add(FieldWord("c", "^")),
+				output:  []string{"a' "},
+			},
+
+			{
+				input:   "a' ",
 				pattern: Pattern{}.Add(FieldWord("c")),
 				output:  []string{"a", "' "},
 			},
@@ -176,13 +182,29 @@ func TestMatchersCommon(t *testing.T) {
 			},
 
 			{
+				input:   "a-a-",
+				pattern: Pattern{}.Add(FieldKey("c")),
+				output:  [][]string{{"a-a", "a-a"}},
+			},
+
+			{
+				input:   "a-a-",
+				pattern: Pattern{}.Add(FieldKey("c", "^")),
+				output:  [][]string(nil), // one may think that this should
+				// match the trailing dash character because it is not a field
+				// key, however, perl has the same results, ie:
+				// $ perl -e '"a-a-" =~ m@((?!\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b))@; print "matched: [${1}]\n";'
+				// matched: []
+			},
+
+			{
 				input:   "+a-a",
 				pattern: Pattern{}.Add(FieldKey("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -201,6 +223,12 @@ func TestMatchersCommon(t *testing.T) {
 				input:   "a",
 				pattern: Pattern{}.Add(Keyword("c")),
 				output:  [][]string{{"a", "a"}},
+			},
+
+			{
+				input:   "a",
+				pattern: Pattern{}.Add(Keyword("c", "^")),
+				output:  [][]string(nil),
 			},
 
 			{
@@ -234,6 +262,12 @@ func TestMatchersCommon(t *testing.T) {
 			},
 
 			{
+				input:   "a-a-",
+				pattern: Pattern{}.Add(Keyword("c")),
+				output:  [][]string{{"a-a", "a-a"}},
+			},
+
+			{
 				input:   "+a-a",
 				pattern: Pattern{}.Add(Keyword("c")),
 				output:  [][]string{{"+a-a", "+a-a"}},
@@ -252,7 +286,7 @@ func TestMatchersCommon(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)

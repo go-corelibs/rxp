@@ -96,6 +96,56 @@ func TestFlags(t *testing.T) {
 		c.So(other.String(), c.ShouldEqual, `^ms`)
 		clone = clone.Merge(other)
 		c.So(clone.String(), c.ShouldEqual, `^msic`)
+		nop := clone.Merge(nil)
+		c.So(nop.String(), c.ShouldEqual, `^msic`)
+
+	})
+
+	c.Convey("Reps", t, func() {
+
+		for idx, test := range []struct {
+			input  Reps
+			valid  bool
+			min    int
+			max    int
+			count  int
+			minHit bool
+			maxHit bool
+		}{
+			{Reps{}, false, 1, 1, 0, false, false},
+			{Reps{2, 1}, false, 2, 1, 0, false, false},
+			{Reps{1, 1}, true, 1, 1, 1, true, true},
+			{Reps{1, 2}, true, 1, 2, 2, true, true},
+			{Reps{1, 1}, true, 1, 1, 0, false, false},
+			{Reps{1, -1}, true, 1, -1, 2, true, false},
+		} {
+			c.SoMsg(
+				fmt.Sprintf("test #%d (valid)", idx),
+				test.input.Valid(), c.ShouldEqual, test.valid,
+			)
+
+			c.SoMsg(
+				fmt.Sprintf("test #%d (min)", idx),
+				test.input.Min(), c.ShouldEqual, test.min,
+			)
+
+			c.SoMsg(
+				fmt.Sprintf("test #%d (max)", idx),
+				test.input.Max(), c.ShouldEqual, test.max,
+			)
+
+			if test.count >= 0 {
+				minHit, maxHit := test.input.Satisfied(test.count)
+				c.SoMsg(
+					fmt.Sprintf("test #%d (hit min)", idx),
+					minHit, c.ShouldEqual, test.minHit,
+				)
+				c.SoMsg(
+					fmt.Sprintf("test #%d (hit max)", idx),
+					maxHit, c.ShouldEqual, test.maxHit,
+				)
+			}
+		}
 
 	})
 }

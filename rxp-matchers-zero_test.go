@@ -38,6 +38,18 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 
 			{
+				input:   "a",
+				pattern: Pattern{}.Caret("^", "m").Text("a"),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "a",
+				pattern: Pattern{}.Caret("^").Text("a"),
+				output:  [][]string(nil),
+			},
+
+			{
 				input:   "a\na",
 				pattern: Pattern{}.Caret().Text("a", "c"),
 				output:  [][]string{{"a", "a"}},
@@ -50,7 +62,7 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -72,6 +84,18 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 
 			{
+				input:   "a",
+				pattern: Pattern{}.Text("a").Dollar("^", "m"),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "a",
+				pattern: Pattern{}.Text("a").Dollar("^"),
+				output:  [][]string(nil),
+			},
+
+			{
 				input:   "a\na",
 				pattern: Pattern{}.Text("a", "c").Dollar(),
 				output:  [][]string{{"a", "a"}},
@@ -84,7 +108,7 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -106,6 +130,12 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 
 			{
+				input:   "",
+				pattern: Pattern{}.A("^"),
+				output:  [][]string(nil),
+			},
+
+			{
 				input:   "a\nb",
 				pattern: Pattern{}.A().Dot("c"),
 				output:  [][]string{{"a", "a"}},
@@ -118,7 +148,7 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -136,6 +166,12 @@ func TestMatchersClassZero(t *testing.T) {
 			{
 				input:   "",
 				pattern: Pattern{}.B(),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "",
+				pattern: Pattern{}.B("^"),
 				output:  [][]string(nil),
 			},
 
@@ -164,7 +200,7 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -182,6 +218,12 @@ func TestMatchersClassZero(t *testing.T) {
 			{
 				input:   "",
 				pattern: Pattern{}.Z(),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "",
+				pattern: Pattern{}.Z("^"),
 				output:  [][]string(nil),
 			},
 
@@ -205,4 +247,66 @@ func TestMatchersClassZero(t *testing.T) {
 		}
 	})
 
+	c.Convey("BackRef", t, func() {
+
+		c.SoMsg(
+			"should panic",
+			func() {
+				_ = Pattern{}.BackRef(0)
+			},
+			c.ShouldPanic,
+		)
+
+		for idx, test := range []struct {
+			inputs  []string
+			pattern Pattern
+			output  [][][]string
+		}{
+
+			{
+				inputs:  []string{"aBaBbb"},
+				pattern: Pattern{}.Text("B", "c").BackRef(1, "i", "^"),
+				output:  [][][]string{{{"Ba", "B"}}},
+			},
+
+			{ // this should not match because the backref is oob
+				inputs:  []string{"aBabbb"},
+				pattern: Pattern{}.Text("b", "i").BackRef(2),
+				output:  [][][]string{nil},
+			},
+
+			{
+				inputs:  []string{"aBabbb"},
+				pattern: Pattern{}.Text("b", "{1}", "ic").BackRef(1, "^"),
+				output: [][][]string{
+					{{"Ba", "B"}, {"b", "b"}},
+				},
+			},
+
+			{
+				inputs: []string{"axaxa", "bxbxb", "cxcxc"}, // ([a-c])x\1x\1 matches axaxa, bxbxb and cxcxc
+				pattern: Pattern{}.
+					R("a-c", "c").
+					Text("x").
+					BackRef(1).
+					Text("x").
+					BackRef(1),
+				output: [][][]string{
+					{{"axaxa", "a"}},
+					{{"bxbxb", "b"}},
+					{{"cxcxc", "c"}},
+				},
+			},
+		} {
+			for jdx, text := range test.inputs {
+				c.SoMsg(
+					fmt.Sprintf("test #%d.%d - %q", idx, jdx, text),
+					test.pattern.FindAllStringSubmatch(text, -1),
+					c.ShouldEqual,
+					test.output[jdx])
+
+			}
+		}
+
+	})
 }
