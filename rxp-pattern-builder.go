@@ -141,3 +141,7 @@ func (p Pattern) RangeTable(table *unicode.RangeTable, flags ...string) Pattern 
 func (p Pattern) R(characters string, flags ...string) Pattern {
 	return append(p, R(characters, flags...))
 }
+
+func (p Pattern) BackRef(idx int, flags ...string) Pattern {
+	return append(p, BackRef(idx, flags...))
+}

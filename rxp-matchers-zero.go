@@ -14,6 +14,10 @@
 
 package rxp
 
+import (
+	"unicode"
+)
+
 // Caret creates a Matcher equivalent to the regexp caret [^]
 func Caret(flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
@@ -125,6 +129,62 @@ func Z(flags ...string) Matcher {
 		if proceed = IndexInvalid(input, index); scope.Negated() {
 			proceed = !proceed
 		}
+		return
+	}
+}
+
+// BackRef is a Matcher equivalent to Perl backreferences where the gid
+// argument is the match group to use
+//
+// BackRef will panic if the gid argument is less than one
+func BackRef(gid int, flags ...string) Matcher {
+	if gid < 1 {
+		panic("BackRef requires a positive non-zero gid argument")
+	}
+	_, cfg := ParseFlags(flags...)
+	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
+		scope = scope.Merge(cfg)
+		captured = scope.Capture()
+
+		if count := len(sm); count == 0 || gid > count { // gid > count is correct because gid is 1-indexed
+			// id is out of range (non-zero index) or no matches present
+			proceed = scope.Negated()
+			return
+		}
+
+		smidx := gid - 1 // convert the gid to the submatch 0-indexed position
+
+		group := sm[smidx]
+		runes := input[group.Start():group.End()]
+		groupLen := group.Len()
+
+		if proceed = len(input) >= index+groupLen; !proceed {
+			// forward is past EOF, OOB is not negated
+			proceed = scope.Negated()
+			return
+		}
+
+		for idx := 0; idx < groupLen; idx++ {
+			forward := index + idx // forward position
+
+			if scope.AnyCase() {
+				proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(input[forward])
+			} else {
+				proceed = runes[idx] == input[forward]
+			}
+
+			if scope.Negated() {
+				proceed = !proceed
+			}
+
+			if !proceed {
+				// early out
+				return
+			}
+
+		}
+
+		consumed = groupLen
 		return
 	}
 }
