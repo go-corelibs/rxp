@@ -74,6 +74,7 @@ func (s *cPatternState) match(count int) (matched bool) {
 				continue // continue the pattern
 			}
 			// pattern did not match correctly
+			completed = 0
 			break
 		}
 
