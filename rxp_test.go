@@ -150,7 +150,7 @@ func Benchmark_Pipeline_Readme_Regexp(b *testing.B) {
 	output := strings.ToLower(gTestDataRandomTxt)
 	output = regexp.MustCompile(`\s+`).ReplaceAllString(output, " ")
 	output = regexp.MustCompile(`[']`).ReplaceAllString(output, "_")
-	output = regexp.MustCompile(`[^\w\s]+`).ReplaceAllString(output, "")
+	_ = regexp.MustCompile(`[^\w\s]+`).ReplaceAllString(output, "")
 }
 
 func Benchmark_Pipeline_Readme_Rxp(b *testing.B) {
