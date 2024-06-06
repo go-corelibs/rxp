@@ -37,3 +37,13 @@ func appendSlice[V interface{}](slice []V, data ...V) []V {
 	copy(slice[m:n], data) // populate with data
 	return slice
 }
+
+func mapKeys[K comparable, V interface{}](m map[K]V) []K {
+	var slice []K
+	for k := range m {
+		// no need for appendSlice because mapKeys is only used by NamedClass
+		// when given a gid < 0, pattern-build-time issue
+		slice = append(slice, k)
+	}
+	return slice
+}
