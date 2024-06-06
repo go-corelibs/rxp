@@ -32,35 +32,36 @@ func Text(text string, flags ...string) Matcher {
 		// number of times unicode.ToLower is called compared to
 		// strings.ToLower which has to scan the entire string each time
 
-		if IndexReady(input, index) {
+		if !IndexReady(input, index) {
+			proceed = scope.Negated()
+			return
+		}
 
-			for idx := 0; idx < needLen; idx++ {
-				forward := index + idx // forward position
-				if proceed = IndexReady(input, forward); !proceed {
-					// forward is past EOF, OOB is not negated
-					return
-				}
-
-				if scope.AnyCase() {
-					proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(input[forward])
-				} else {
-					proceed = runes[idx] == input[forward]
-				}
-
-				if scope.Negated() {
-					proceed = !proceed
-				}
-
-				if !proceed {
-					// early out
-					return
-				}
-
+		for idx := 0; idx < needLen; idx++ {
+			forward := index + idx // forward position
+			if proceed = IndexReady(input, forward); !proceed {
+				// forward is past EOF, OOB is not negated
+				return
 			}
 
-			consumed = needLen
+			if scope.AnyCase() {
+				proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(input[forward])
+			} else {
+				proceed = runes[idx] == input[forward]
+			}
+
+			if scope.Negated() {
+				proceed = !proceed
+			}
+
+			if !proceed {
+				// early out
+				return
+			}
 
 		}
+
+		consumed = needLen
 
 		return
 	}, flags...)
