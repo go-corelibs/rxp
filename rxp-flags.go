@@ -355,10 +355,8 @@ func (f cFlags) parseFlags(input []rune) (flags cFlags, reps Reps, ok bool) {
 		// nop is allowed
 
 		case '^', 'm', 's', 'i', 'c':
-			if flags, _, ok = flags.parseFlag(this); ok {
-				continue
-			}
-			return f, nil, false
+			flags, _, ok = flags.parseFlag(this)
+			continue
 
 		default:
 			// error
