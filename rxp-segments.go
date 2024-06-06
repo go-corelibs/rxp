@@ -14,10 +14,6 @@
 
 package rxp
 
-import (
-	sync "github.com/go-corelibs/x-sync"
-)
-
 type Segments []Segment
 
 func (m Segments) Indexes() (indexes [][]int) {
@@ -38,7 +34,7 @@ func (m Segments) String() string {
 
 func (m Segments) Strings() (found []string) {
 	for _, match := range m {
-		found = sync.Append(found, match.String())
+		found = appendSlice(found, match.String())
 	}
 	return
 }

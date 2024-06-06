@@ -14,10 +14,6 @@
 
 package rxp
 
-import (
-	sync "github.com/go-corelibs/x-sync"
-)
-
 type cPatternState struct {
 	input   []rune  // original string input
 	index   int     // current match position (total runes consumed)
@@ -41,12 +37,12 @@ func (s *cPatternState) findString(count int) (matched [][]string) {
 				var list []string
 				for _, submatch := range match {
 					// first index is the complete match
-					list = sync.Append(
+					list = appendSlice(
 						list,
 						string(s.input[submatch.Start():submatch.End()]),
 					)
 				}
-				matched = sync.Append(matched, list)
+				matched = appendSlice(matched, list)
 			}
 		}
 	}
@@ -71,7 +67,7 @@ func (s *cPatternState) match(count int) (matched bool) {
 			// call each matcher once, expecting matcher to progress the index
 			if cons, capt, _, proceed := matcher(gDefaultFlags, gDefaultReps, s.input, s.index, subMatches); proceed {
 				if capt {
-					subMatches = sync.Append(subMatches, []int{s.index, s.index + cons})
+					subMatches = appendSlice(subMatches, []int{s.index, s.index + cons})
 				}
 				s.index += cons
 				completed += 1
@@ -83,9 +79,9 @@ func (s *cPatternState) match(count int) (matched bool) {
 
 		if completed >= required {
 			if len(subMatches) > 0 {
-				s.matches = sync.Append(s.matches, append(SubMatches{SubMatch{start, s.index}}, subMatches...))
+				s.matches = appendSlice(s.matches, append(SubMatches{SubMatch{start, s.index}}, subMatches...))
 			} else if start != s.index {
-				s.matches = sync.Append(s.matches, SubMatches{SubMatch{start, s.index}})
+				s.matches = appendSlice(s.matches, SubMatches{SubMatch{start, s.index}})
 			}
 			if count > 0 && count >= completed {
 				// early out, optimized for Pattern.Segment() calls
