@@ -53,6 +53,13 @@ func (m SubMatches) End() int {
 // SubMatch is a single pair of start and end input rune indices
 type SubMatch []int
 
+func (m SubMatch) Len() int {
+	if len(m) > 1 {
+		return m[1] - m[0]
+	}
+	return -1
+}
+
 func (m SubMatch) Start() int {
 	if len(m) > 0 {
 		return m[0]
