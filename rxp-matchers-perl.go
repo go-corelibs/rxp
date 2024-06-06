@@ -170,12 +170,12 @@ func Xdigit(flags ...string) Matcher {
 	return WrapMatcher(RuneIsXDIGIT, flags...)
 }
 
-// Class creates a Matcher equivalent to the regexp [:AsciiNames:],
+// NamedClass creates a Matcher equivalent to the regexp [:AsciiNames:],
 // see the AsciiNames constants for the list of supported ASCII class
 // names
 //
-// Class will panic if given an invalid class name
-func Class(name AsciiNames, flags ...string) Matcher {
+// NamedClass will panic if given an invalid class name
+func NamedClass(name AsciiNames, flags ...string) Matcher {
 	if matcher, ok := LookupAsciiClass[name]; ok {
 		return WrapMatcher(matcher, flags...)
 	}

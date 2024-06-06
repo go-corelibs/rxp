@@ -147,10 +147,10 @@ func TestMatchersClassPerl(t *testing.T) {
 		}
 	})
 
-	c.Convey("Class", t, func() {
+	c.Convey("NamedClass", t, func() {
 
 		c.So(func() {
-			_ = Class("nope")
+			_ = NamedClass("nope")
 		}, c.ShouldPanic)
 
 		for idx, test := range []struct {
