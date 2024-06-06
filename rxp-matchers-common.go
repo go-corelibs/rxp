@@ -72,25 +72,18 @@ func FieldWord(flags ...string) Matcher {
 func FieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		if IndexInvalid(input, index) {
-			return
-		}
 		scope = scope.Merge(cfg)
-
-		var this rune
-		if this, proceed = IndexGet(input, index); !proceed {
-			if scope.Negated() {
-				proceed = true
-			}
+		if IndexInvalid(input, index) {
+			proceed = scope.Negated()
 			return
 		}
+
+		this, _ := IndexGet(input, index)
 
 		if proceed = RuneIsALPHA(this); proceed {
 			// matched first range [a-zA-Z]
 			consumed += 1
-			if scope.Capture() {
-				captured = true
-			}
+			captured = scope.Capture()
 
 			total := len(input)
 
