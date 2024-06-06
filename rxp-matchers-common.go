@@ -19,7 +19,7 @@ package rxp
 //	(?:\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
 func FieldWord(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, _ Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, _ Reps, input []rune, index int, matches SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if IndexInvalid(input, index) {
 			return
 		}
@@ -76,7 +76,7 @@ func FieldWord(flags ...string) Matcher {
 //	(?:\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func FieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if IndexInvalid(input, index) {
 			return
 		}
@@ -135,7 +135,7 @@ func FieldKey(flags ...string) Matcher {
 //	(?:\b[-+]?[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func Keyword(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if IndexInvalid(input, index) {
 			return
 		}

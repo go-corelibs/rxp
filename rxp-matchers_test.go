@@ -35,7 +35,7 @@ func TestMatchers(t *testing.T) {
 
 		c.So(
 			Pattern{}.
-				Add(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+				Add(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 					if prev, ok := IndexGet(input, index-1); ok {
 						if prev == 'o' {
 							if this, ok := IndexGet(input, index); ok {
@@ -161,7 +161,7 @@ func TestDot(t *testing.T) {
 
 			{
 				input: "stuff @func/more/stuff",
-				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 					// not capturing on purpose
 					this, okt := IndexGet(input, index)
 					if proceed = okt && this == '@'; proceed {

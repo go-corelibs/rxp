@@ -16,7 +16,7 @@ package rxp
 
 // Caret creates a Matcher equivalent to the regexp caret [^]
 func Caret(options ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
 			// start of input or start of line
@@ -38,7 +38,7 @@ func Caret(options ...string) Matcher {
 
 // Dollar creates a Matcher equivalent to the regexp [$]
 func Dollar(options ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
 			// end of input or end of line
@@ -64,7 +64,7 @@ func Dollar(options ...string) Matcher {
 
 // A creates a Matcher equivalent to the regexp [\A]
 func A() Matcher {
-	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if proceed = index == 0; scope.Negated() {
 			proceed = !proceed
 		}
@@ -74,7 +74,7 @@ func A() Matcher {
 
 // B creates a Matcher equivalent to the regexp [\b]
 func B() Matcher {
-	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		this, _ := IndexGet(input, index)
 		next, _ := IndexGet(input, index+1)
@@ -114,7 +114,7 @@ func B() Matcher {
 
 // Z is a Matcher equivalent to the regexp [\z]
 func Z() Matcher {
-	return func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if proceed = IndexInvalid(input, index); scope.Negated() {
 			proceed = !proceed
 		}

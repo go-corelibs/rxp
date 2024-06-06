@@ -20,13 +20,13 @@ package rxp
 // Or accepts Pattern, Matcher and string types and will panic on all others
 func Or(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if scope.Capture() {
 			captured = true
 		}
 		for _, matcher := range matchers {
 			clone := scope.Clone()
-			if cons, capt, nega, next := matcher(clone, reps, input, index); next {
+			if cons, capt, nega, next := matcher(clone, reps, input, index, sm); next {
 				return cons, capt || captured, nega, !scope.Negated()
 			}
 		}
@@ -40,7 +40,7 @@ func Or(options ...interface{}) Matcher {
 // Not accepts Pattern, Matcher and string types and will panic on all others
 func Not(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if IndexInvalid(input, index) {
 			return
 		}
@@ -49,7 +49,7 @@ func Not(options ...interface{}) Matcher {
 		// Not is an Or-like operation when there are multiple Matcher
 		// instances, first one proceeds
 		for _, matcher := range matchers {
-			if consumed, _, _, proceed = matcher(scope.Clone(), reps, input, index); proceed {
+			if consumed, _, _, proceed = matcher(scope.Clone(), reps, input, index, sm); proceed {
 				break
 			}
 		}
@@ -72,14 +72,14 @@ func Not(options ...interface{}) Matcher {
 // applied
 func Group(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Capture() {
 			captured = true
 		}
 
 		for _, matcher := range matchers {
-			if cons, _, _, next := matcher(scope, reps, input, index+consumed); !next {
+			if cons, _, _, next := matcher(scope, reps, input, index+consumed, sm); !next {
 				consumed = 0
 				return
 			} else {
