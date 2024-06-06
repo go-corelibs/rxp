@@ -108,7 +108,7 @@ func (m SubMatch) Start() int {
 }
 
 func (m SubMatch) End() int {
-	if lm := len(m); lm > 0 {
+	if lm := len(m); lm > 1 {
 		return m[lm-1]
 	}
 	return -1
