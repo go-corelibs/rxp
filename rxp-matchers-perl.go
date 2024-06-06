@@ -199,8 +199,6 @@ func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 			if proceed {
 				consumed += 1
 			}
-		} else if scope.Negated() {
-			proceed = true
 		}
 
 		return
