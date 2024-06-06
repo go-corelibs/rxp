@@ -178,7 +178,7 @@ func NamedClass(name AsciiNames, flags ...string) Matcher {
 	if matcher, ok := LookupAsciiClass[name]; ok {
 		return WrapMatcher(matcher, flags...)
 	}
-	panic(fmt.Errorf("invalid AsciiNames: %q", name))
+	panic(fmt.Errorf("invalid ASCII name: %q, valid names are: %q", name, mapKeys(LookupAsciiClass)))
 }
 
 // IsUnicodeRange creates a Matcher equivalent to the regexp \pN where N
