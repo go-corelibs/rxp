@@ -87,7 +87,6 @@ func (s *cPatternState) match(count int) (matched bool) {
 			} else if start != s.index {
 				s.matches = sync.Append(s.matches, SubMatches{SubMatch{start, s.index}})
 			}
-			start = s.index
 			if count > 0 && count >= completed {
 				// early out, optimized for Pattern.Segment() calls
 				// count is the developer requested total number of subMatches
