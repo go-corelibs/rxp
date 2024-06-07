@@ -74,7 +74,8 @@ func (r *cSegment) String() string {
 	if len(r.matches) == 1 {
 		buf.WriteString(string(r.input[r.matches[0].Start():r.matches[0].End()]))
 	} else {
-		for _, m := range r.matches[1:] { // first always is the entire match group
+		for _, m := range r.matches[1:] {
+			// skip first which is the entire matched text
 			// regardless of m.capture state
 			buf.WriteString(string(r.input[m.Start():m.End()]))
 		}
