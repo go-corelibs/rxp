@@ -66,7 +66,7 @@ func TestMatchersCompositors(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -180,7 +180,7 @@ func TestMatchersCompositors(t *testing.T) {
 			// END oddities
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -390,7 +390,7 @@ func TestMatchersCompositors(t *testing.T) {
 				output: [][]string{{" 1  ", "1"}},
 			},
 		} {
-			c.SoMsg(fmt.Sprintf("test #%d", idx),
+			c.SoMsg(fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)

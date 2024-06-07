@@ -240,7 +240,7 @@ func TestMatchersClassZero(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)

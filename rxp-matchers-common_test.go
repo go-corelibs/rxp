@@ -79,7 +79,7 @@ func TestMatchersCommon(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.ScanStrings(test.input).Strings(),
 				c.ShouldEqual,
 				test.output)
@@ -130,7 +130,7 @@ func TestMatchersCommon(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.ScanStrings(test.input).String(),
 				c.ShouldEqual,
 				test.input)

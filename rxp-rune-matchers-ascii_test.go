@@ -55,7 +55,7 @@ func TestRuneIsALNUM(t *testing.T) {
 			{'!', false},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				RuneIsALNUM(test.input),
 				c.ShouldEqual,
 				test.output,
@@ -100,7 +100,7 @@ func TestRuneIsALPHA(t *testing.T) {
 			{'!', false},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				RuneIsALPHA(test.input),
 				c.ShouldEqual,
 				test.output,

@@ -74,7 +74,7 @@ func TestMatchers(t *testing.T) {
 			{"/nope/core/", [][]string(nil)},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				p.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual, test.output,
 			)
@@ -97,7 +97,7 @@ func TestMatchers(t *testing.T) {
 			{"/nope/core/", [][]string(nil)},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				p.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual, test.output,
 			)

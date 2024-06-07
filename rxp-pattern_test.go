@@ -37,7 +37,7 @@ func TestPattern(t *testing.T) {
 			{input: "\naa", pattern: Pattern{}.Dot("{1}", "c"), ok: true},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.MatchString(test.input),
 				c.ShouldEqual,
 				test.ok,
@@ -59,7 +59,7 @@ func TestPattern(t *testing.T) {
 			{input: "\naa", pattern: Pattern{}.Dot("{1}", "c"), output: "a"},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindString(test.input),
 				c.ShouldEqual,
 				test.output,
@@ -81,7 +81,7 @@ func TestPattern(t *testing.T) {
 			{input: "a\naa", pattern: Pattern{}.Dot("{1}", "c"), output: []string{"a", "a"}},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindStringSubmatch(test.input),
 				c.ShouldEqual,
 				test.output,
@@ -103,7 +103,7 @@ func TestPattern(t *testing.T) {
 			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), output: []int{0, 1}},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindIndex(test.input),
 				c.ShouldEqual,
 				test.output,
@@ -126,7 +126,7 @@ func TestPattern(t *testing.T) {
 			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: [][]int{{0, 1}, {1, 2}}},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringIndex(test.input, test.count),
 				c.ShouldEqual,
 				test.output,
@@ -152,7 +152,7 @@ func TestPattern(t *testing.T) {
 			}},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatchIndex(test.input, test.count),
 				c.ShouldEqual,
 				test.output,
@@ -175,7 +175,7 @@ func TestPattern(t *testing.T) {
 			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: []string{"a", "a"}},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllString(test.input, test.count),
 				c.ShouldEqual,
 				test.output,
@@ -205,7 +205,7 @@ func TestPattern(t *testing.T) {
 			{input: "", pattern: nil, output: ""},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.ReplaceAllStringFunc(test.input, test.transform),
 				c.ShouldEqual,
 				test.output,
@@ -262,7 +262,7 @@ func TestPattern(t *testing.T) {
 			{input: "", pattern: nil, replace: nil, output: ""},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.ReplaceAllString(test.input, test.replace),
 				c.ShouldEqual,
 				test.output,
@@ -287,7 +287,7 @@ func TestPattern(t *testing.T) {
 				{input: "one", pattern: Pattern{}.Text("nope", "c"), output: []string{"one"}},
 			} {
 				c.SoMsg(
-					fmt.Sprintf("test #%d", idx),
+					fmt.Sprintf("test #%d - %q", idx, test.input),
 					test.pattern.ScanStrings(test.input).Strings(),
 					c.ShouldEqual,
 					test.output,
@@ -310,7 +310,7 @@ func TestPattern(t *testing.T) {
 				{input: "one", pattern: Pattern{}.Text("nope", "c"), output: [][]int{{0, 3}}},
 			} {
 				c.SoMsg(
-					fmt.Sprintf("test #%d", idx),
+					fmt.Sprintf("test #%d - %q", idx, test.input),
 					test.pattern.ScanStrings(test.input).Indexes(),
 					c.ShouldEqual,
 					test.output,

@@ -81,7 +81,7 @@ func TestMatchersClassPerl(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -189,7 +189,7 @@ func TestMatchersClassPerl(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output,
@@ -231,7 +231,7 @@ func TestMatchersClassPerl(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -271,7 +271,7 @@ func TestMatchersClassPerl(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -314,7 +314,7 @@ func TestMatchersClassPerl(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -346,7 +346,7 @@ func TestMatchersClassPerl(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -396,7 +396,7 @@ func TestMatchersClassPerl(t *testing.T) {
 			},
 		} {
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllStringSubmatch(test.input, -1),
 				c.ShouldEqual,
 				test.output)
@@ -447,7 +447,7 @@ func TestMatchersClassPerl(t *testing.T) {
 		} {
 
 			c.SoMsg(
-				fmt.Sprintf("test #%d", idx),
+				fmt.Sprintf("test #%d - %q", idx, test.input),
 				test.pattern.FindAllString(test.input, -1),
 				c.ShouldEqual,
 				test.output,
