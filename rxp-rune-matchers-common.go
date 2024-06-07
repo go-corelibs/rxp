@@ -21,10 +21,3 @@ func RuneIsPlusMinus(r rune) bool {
 func RuneIsDashUnder(r rune) bool {
 	return r == '-' || r == '_'
 }
-
-func RuneIsDashUnderALNUM(r rune) bool {
-	return r == '-' || r == '_' ||
-		('a' <= r && r <= 'z') ||
-		('A' <= r && r <= 'Z') ||
-		('0' <= r && r <= '9')
-}
