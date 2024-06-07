@@ -29,9 +29,9 @@ func appendSlice[V interface{}](slice []V, data ...V) []V {
 	m := len(slice)     // current length
 	n := m + len(data)  // needed length
 	if n > cap(slice) { // current cap size
-		grown := make([]V, (m+1)*2) // double the existing space
-		copy(grown, slice)          // transfer to new slice
-		slice = grown               // grown becomes slice
+		grown := make([]V, ((m+1)*2)+n) // double the existing space
+		copy(grown, slice)              // transfer to new slice
+		slice = grown                   // grown becomes slice
 	}
 	slice = slice[0:n]     // truncate in case too many present
 	copy(slice[m:n], data) // populate with data
