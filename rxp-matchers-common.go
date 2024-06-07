@@ -19,38 +19,47 @@ package rxp
 //	(?:\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
 func FieldWord(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, _ Reps, input []rune, index int, matches SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, _ Reps, input *RuneBuffer, index int, matches SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		scope |= cfg
-		if IndexInvalid(input, index) {
+		if input.Invalid(index) {
 			proceed = scope.Negated()
 			return
 		}
 
-		this, _ := IndexGet(input, index) // this will never fail due to previous IndexInvalid check
+		this, _ := input.Get(index) // this will never fail due to previous IndexInvalid check
 
 		if proceed = RuneIsALNUM(this); proceed {
 			// first rune matched the first range [a-zA-Z]
 			consumed += 1
 
-			total := len(input)
+			total := input.Len()
 
 			// scan for second range runes
-			for idx := index + consumed; idx < total; idx += 1 {
-				r := input[idx]
+			for idx := index + consumed; idx < total; {
+				r, _ := input.Get(idx)
 
-				if r == '\'' || RuneIsALNUM(r) {
+				if RuneIsALNUM(r) {
 					consumed += 1
+					idx += 1
 					continue
+				}
+
+				if r == '\'' {
+					if next, ok := input.Get(idx + 1); ok {
+						// found the next rune
+						if RuneIsALNUM(next) {
+							// accept this rune
+							consumed += 1
+							idx += 1
+							continue
+						}
+					}
+					// end of input reached, or next is not alnum
+					// do not consume this \' rune
 				}
 
 				// stop scanning, not within second range anymore
 				break
-			}
-
-			if consumed > 1 && index+consumed-1 < total {
-				for consumed > 1 && !RuneIsALNUM(input[index+consumed-1]) {
-					consumed -= 1
-				}
 			}
 
 			if scope.Capture() {
@@ -71,40 +80,65 @@ func FieldWord(flags ...string) Matcher {
 //	(?:\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func FieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		scope |= cfg
-		if IndexInvalid(input, index) {
+		if input.Invalid(index) {
 			proceed = scope.Negated()
 			return
 		}
 
-		this, _ := IndexGet(input, index)
+		this, _ := input.Get(index)
 
 		if proceed = RuneIsALPHA(this); proceed {
 			// matched first range [a-zA-Z]
 			consumed += 1
 			captured = scope.Capture()
 
-			total := len(input)
+			total := input.Len()
+
+			var scanForward func(start int) (size int, ok bool)
+			scanForward = func(start int) (size int, ok bool) {
+				if nxt, present := input.Get(start); present {
+					// found the next rune
+					if RuneIsALNUM(nxt) {
+						// accept this rune
+						return 1, true
+					} else if RuneIsDashUnder(nxt) {
+						if size, ok = scanForward(start + 1); ok {
+							size += 1
+							return size, true
+						}
+					}
+				}
+				return 0, false
+			}
 
 			// scan for second range
-			for idx := index + consumed; idx < total; idx += 1 {
-				r := input[idx]
+			for idx := index + consumed; idx < total; {
+				if r, rok := input.Get(idx); rok {
 
-				if RuneIsDashUnderALNUM(r) {
-					consumed += 1
-					continue
+					if RuneIsALNUM(r) {
+						consumed += 1
+						idx += 1
+						continue
+					}
+
+					if RuneIsDashUnder(r) {
+
+						if sz, ok := scanForward(idx + 1); ok {
+							consumed += 1 + sz
+							idx += 1 + sz
+							continue
+						}
+
+						// end of input reached, or next is not alnum
+						// do not consume this - or _ rune
+					}
+
 				}
 
 				// not a valid rune for this Matcher
 				break
-			}
-
-			// if the last rune is [-_], rewind to last [^-_]
-			if consumed > 1 && index+consumed-1 < total {
-				for consumed > 1 && RuneIsDashUnder(input[index+consumed-1]) {
-					consumed -= 1
-				}
 			}
 
 		}
@@ -123,19 +157,19 @@ func FieldKey(flags ...string) Matcher {
 //	(?:\b[-+]?[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func Keyword(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		scope |= cfg
-		if IndexInvalid(input, index) {
+		if input.Invalid(index) {
 			proceed = scope.Negated()
 			return
 		}
 
-		this, _ := IndexGet(input, index)
+		this, _ := input.Get(index)
 
 		var plusOrMinus rune
 		if RuneIsPlusMinus(this) {
 			plusOrMinus = this
-			if this, proceed = IndexGet(input, index+1); !proceed {
+			if this, proceed = input.Get(index + 1); !proceed {
 				return
 			}
 		}
@@ -153,26 +187,36 @@ func Keyword(flags ...string) Matcher {
 				captured = true
 			}
 
-			total := len(input)
+			total := input.Len()
 
 			// scan for second range
-			for idx := index + consumed; idx < total; idx += 1 {
-				r := input[idx]
+			for idx := index + consumed; idx < total; {
+				if r, rok := input.Get(idx); rok {
 
-				if RuneIsDashUnderALNUM(r) {
-					consumed += 1
-					continue
+					if RuneIsALNUM(r) {
+						consumed += 1
+						idx += 1
+						continue
+					}
+
+					if RuneIsDashUnder(r) {
+						if next, ok := input.Get(idx + 1); ok {
+							// found the next rune
+							if RuneIsALNUM(next) {
+								// accept this rune
+								consumed += 1
+								idx += 1
+								continue
+							}
+						}
+						// end of input reached, or next is not alnum
+						// do not consume this - or _ rune
+					}
+
 				}
 
 				// not a valid rune for this Matcher
 				break
-			}
-
-			// if the last rune is [-_], rewind to last [^-_]
-			if index+consumed-1 < total {
-				for consumed > 1 && RuneIsDashUnder(input[index+consumed-1]) {
-					consumed -= 1
-				}
 			}
 
 		}
