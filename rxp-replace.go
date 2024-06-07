@@ -18,6 +18,10 @@ import (
 	"strings"
 )
 
+// Transform is the function signature for non-rxp string transformation
+// pipeline stages
+type Transform func(input string) (output string)
+
 // Replacement is a Segment.String replacement function
 type Replacement func(s Segment) (replaced string)
 
