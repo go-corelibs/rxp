@@ -20,7 +20,7 @@ package rxp
 // Or accepts Pattern, Matcher and string types and will panic on all others
 func Or(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		if scope.Capture() {
 			captured = true
 		}
@@ -40,8 +40,8 @@ func Or(options ...interface{}) Matcher {
 // Not accepts Pattern, Matcher and string types and will panic on all others
 func Not(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-		if IndexInvalid(input, index) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+		if input.Invalid(index) {
 			proceed = scope.Negated()
 			return
 		}
@@ -73,7 +73,7 @@ func Not(options ...interface{}) Matcher {
 // accepted together as this group (sub-sub-matches are not a thing)
 func Group(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Capture() {
 			captured = true

@@ -21,6 +21,7 @@ type Pattern []Matcher
 func (p Pattern) Match(input []rune) (ok bool) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
+		defer s.recycle()
 		ok = s.match(1)
 		s.matches = nil
 	}
@@ -34,6 +35,7 @@ func (p Pattern) MatchString(input string) (ok bool) {
 func (p Pattern) FindAllString(input string, count int) (found []string) {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
+		defer s.recycle()
 		for _, m := range s.findString(count) {
 			found = append(found, m[0]) // always at least one present
 		}
@@ -45,6 +47,7 @@ func (p Pattern) FindAllString(input string, count int) (found []string) {
 func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
+		defer s.recycle()
 		if s.match(count) {
 			for _, mm := range s.matches {
 				found = append(found, []int{mm[0].Start(), mm[0].End()})
@@ -58,6 +61,7 @@ func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
 func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]string) {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
+		defer s.recycle()
 		found = s.findString(count)
 		s.matches = nil
 	}
@@ -67,6 +71,7 @@ func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]strin
 func (p Pattern) FindAllStringSubmatchIndex(input string, count int) (found Matches) {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
+		defer s.recycle()
 		if s.match(count) {
 			found = s.matches
 		}
@@ -85,6 +90,7 @@ func (p Pattern) FindString(input string) string {
 func (p Pattern) FindStringSubmatch(input string) (found []string) {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
+		defer s.recycle()
 		if mm := s.findString(1); len(mm) > 0 {
 			found = mm[0]
 		}
@@ -96,6 +102,7 @@ func (p Pattern) FindStringSubmatch(input string) (found []string) {
 func (p Pattern) FindIndex(input string) (found []int) {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
+		defer s.recycle()
 		if s.match(1) {
 			mm := s.matches[0]
 			found = []int{mm[0].Start(), mm[0].End()}
@@ -107,26 +114,28 @@ func (p Pattern) FindIndex(input string) (found []int) {
 
 func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 	if len(p) > 0 {
-		s := newPatternState(p, []rune(input))
+		runes := []rune(input)
+		s := newPatternState(p, runes)
+		defer s.recycle()
 		if s.match(-1) {
 			buf := spStringBuilder.Get()
 			defer spStringBuilder.Put(buf)
 			var last int
 			for _, match := range s.matches {
 				if last < match.Start() {
-					buf.WriteString(string(s.input[last:match.Start()]))
+					buf.WriteString(string(s.input.Slice(last, match.Start())))
 				}
 				last = match.End()
 				for _, rpl := range repl {
 					buf.WriteString(rpl(&cSegment{
-						input:   s.input,
+						input:   runes,
 						matched: true,
 						matches: match,
 					}))
 				}
 			}
-			if last < len(s.input) {
-				buf.WriteString(string(s.input[last:]))
+			if last < s.input.Len() {
+				buf.WriteString(string(s.input.Slice(last, -1)))
 			}
 			s.matches = nil
 			return buf.String()
@@ -138,19 +147,20 @@ func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 	if len(p) > 0 {
 		s := newPatternState(p, []rune(input))
+		defer s.recycle()
 		if s.match(-1) {
 			buf := spStringBuilder.Get()
 			defer spStringBuilder.Put(buf)
 			var last int
 			for _, match := range s.matches {
 				if last < match.Start() {
-					buf.WriteString(string(s.input[last:match.Start()]))
+					buf.WriteString(string(s.input.Slice(last, match.Start())))
 				}
 				last = match.End()
-				buf.WriteString(repl(string(s.input[match.Start():match.End()])))
+				buf.WriteString(repl(string(s.input.Slice(match.Start(), match.End()))))
 			}
-			if last < len(s.input) {
-				buf.WriteString(string(s.input[last:]))
+			if last < s.input.Len() {
+				buf.WriteString(string(s.input.Slice(last, -1)))
 			}
 			s.matches = nil
 			return buf.String()
@@ -161,20 +171,22 @@ func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 
 func (p Pattern) ScanStrings(input string) (segments Segments) {
 	runes := []rune(input)
+	count := len(runes)
 	if len(p) == 0 {
 		return []Segment{&cSegment{
 			input:   runes,
 			matched: false,
-			matches: SubMatches{SubMatch{0, len(runes)}},
+			matches: SubMatches{SubMatch{0, count}},
 		}}
 	}
 
 	s := newPatternState(p, runes)
+	defer s.recycle()
 	if !s.match(-1) {
 		return []Segment{&cSegment{
 			input:   runes,
 			matched: false,
-			matches: SubMatches{SubMatch{0, len(runes)}},
+			matches: SubMatches{SubMatch{0, count}},
 		}}
 	}
 
@@ -196,11 +208,11 @@ func (p Pattern) ScanStrings(input string) (segments Segments) {
 		})
 	}
 
-	if last < len(s.input) {
+	if last < s.input.Len() {
 		segments = appendSlice[Segment](segments, &cSegment{
 			input:   runes,
 			matched: false,
-			matches: SubMatches{SubMatch{last, len(s.input)}},
+			matches: SubMatches{SubMatch{last, s.input.Len()}},
 		})
 	}
 	s.matches = nil

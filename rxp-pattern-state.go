@@ -15,34 +15,37 @@
 package rxp
 
 type cPatternState struct {
-	input   []rune  // original string input
-	index   int     // current match position (total runes consumed)
-	pattern Pattern // list of fragments to satisfy as a match
-	capture []bool  // denotes corresponding matches are capture groups or not
-	matches Matches // list of matches (with matched capture groups)
+	input   *RuneBuffer // input rune buffer
+	index   int         // current match position (total runes consumed)
+	pattern Pattern     // list of fragments to satisfy as a match
+	capture []bool      // denotes corresponding matches are capture groups or not
+	matches Matches     // list of matches (with matched capture groups)
 }
 
 func newPatternState(p Pattern, input []rune) *cPatternState {
 	return &cPatternState{
-		input:   input,
+		input:   NewRuneBuffer(input),
 		index:   0,
 		pattern: p,
 	}
+}
+
+func (s *cPatternState) recycle() {
+	s.input.recycle()
 }
 
 func (s *cPatternState) findString(count int) (matched [][]string) {
 	if s.match(count) {
 		for _, match := range s.matches {
 			if len(match) > 0 {
-				var list []string
+				var groups []string
 				for _, submatch := range match {
-					// first index is the complete match
-					list = appendSlice(
-						list,
-						string(s.input[submatch.Start():submatch.End()]),
+					groups = appendSlice(
+						groups,
+						string(s.input.Slice(submatch.Start(), submatch.End())),
 					)
 				}
-				matched = appendSlice(matched, list)
+				matched = appendSlice(matched, groups)
 			}
 		}
 	}
@@ -57,7 +60,7 @@ func (s *cPatternState) match(count int) (matched bool) {
 	required := len(s.pattern) // completed requirement
 
 	// while there is input to process
-	for s.index <= len(s.input) {
+	for s.input.Valid(s.index) {
 
 		start := s.index
 		var subMatches SubMatches

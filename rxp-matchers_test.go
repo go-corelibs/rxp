@@ -24,22 +24,14 @@ import (
 func TestMatchers(t *testing.T) {
 	c.Convey("Custom", t, func() {
 
-		check := "oops"
-		_ = Pattern{}.Add(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
-			input[0] = '!'
-			// modifying the input slice is meaningless outside this func
-			return
-		}).MatchString(check)
-		c.So(check, c.ShouldEqual, "oops")
-
 		c.So(
 			Pattern{}.
-				Add(func(scope Flags, reps Reps, input []rune, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-					if prev, ok := IndexGet(input, index-1); ok {
+				Add(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+					if prev, ok := input.Get(index - 1); ok {
 						if prev == 'o' {
-							if this, ok := IndexGet(input, index); ok {
+							if this, ok := input.Get(index); ok {
 								if this == 'n' {
-									if next, ok := IndexGet(input, index+1); ok {
+									if next, ok := input.Get(index + 1); ok {
 										if next == 'e' {
 											consumed += 1
 											captured = true
