@@ -32,8 +32,8 @@ func TestPatternMatches(t *testing.T) {
 			start int
 			end   int
 		}{
-			{SubMatch{}, false, -1, -1, -1},
-			{SubMatch{0}, false, -1, 0, -1},
+			{SubMatch{}, false, 0, 0, 0},
+			{SubMatch{0}, false, 0, 0, 0},
 			{SubMatch{0, 1}, true, 1, 0, 1},
 		} {
 			c.SoMsg(
@@ -41,7 +41,7 @@ func TestPatternMatches(t *testing.T) {
 				test.input.Valid(), c.ShouldEqual, test.valid,
 			)
 			c.SoMsg(
-				fmt.Sprintf("test #%d (len)", idx),
+				fmt.Sprintf("test #%d (size)", idx),
 				test.input.Len(), c.ShouldEqual, test.len,
 			)
 			c.SoMsg(
@@ -58,6 +58,10 @@ func TestPatternMatches(t *testing.T) {
 
 	c.Convey("SubMatches", t, func() {
 
+		sm, ok := SubMatches{}.Get(1)
+		c.So(ok, c.ShouldBeFalse)
+		c.So(sm, c.ShouldBeNil)
+
 		for idx, test := range []struct {
 			input SubMatches
 			valid bool
@@ -65,8 +69,8 @@ func TestPatternMatches(t *testing.T) {
 			start int
 			end   int
 		}{
-			{SubMatches{}, true, -1, -1, -1},
-			{SubMatches{{0}}, false, -1, 0, -1},
+			{SubMatches{}, true, 0, 0, 0},
+			{SubMatches{{0}}, false, 0, 0, 0},
 			{SubMatches{{0, 1}}, true, 1, 0, 1},
 		} {
 			c.SoMsg(
@@ -74,8 +78,8 @@ func TestPatternMatches(t *testing.T) {
 				test.input.Valid(), c.ShouldEqual, test.valid,
 			)
 			c.SoMsg(
-				fmt.Sprintf("test #%d (len)", idx),
-				test.input.Len(), c.ShouldEqual, test.len,
+				fmt.Sprintf("test #%d (size)", idx),
+				test.input.Size(), c.ShouldEqual, test.len,
 			)
 			c.SoMsg(
 				fmt.Sprintf("test #%d (start)", idx),
@@ -91,6 +95,15 @@ func TestPatternMatches(t *testing.T) {
 
 	c.Convey("Matches", t, func() {
 
+		m := Matches{{{0, 1}}}
+		c.So(m.Len(), c.ShouldEqual, 1)
+		sm, ok := m.Get(1)
+		c.So(ok, c.ShouldBeFalse)
+		c.So(sm, c.ShouldBeNil)
+		sm, ok = m.Get(0)
+		c.So(ok, c.ShouldBeTrue)
+		c.So(sm, c.ShouldNotBeNil)
+
 		for idx, test := range []struct {
 			input Matches
 			valid bool
@@ -98,8 +111,8 @@ func TestPatternMatches(t *testing.T) {
 			start int
 			end   int
 		}{
-			{Matches{}, true, -1, -1, -1},
-			{Matches{{{0}}}, false, -1, 0, -1},
+			{Matches{}, true, 0, 0, 0},
+			{Matches{{{0}}}, false, 0, 0, 0},
 			{Matches{{{0, 1}}}, true, 1, 0, 1},
 		} {
 			c.SoMsg(
@@ -107,8 +120,8 @@ func TestPatternMatches(t *testing.T) {
 				test.input.Valid(), c.ShouldEqual, test.valid,
 			)
 			c.SoMsg(
-				fmt.Sprintf("test #%d (len)", idx),
-				test.input.Len(), c.ShouldEqual, test.len,
+				fmt.Sprintf("test #%d (size)", idx),
+				test.input.Size(), c.ShouldEqual, test.len,
 			)
 			c.SoMsg(
 				fmt.Sprintf("test #%d (start)", idx),
