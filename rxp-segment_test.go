@@ -24,7 +24,7 @@ func TestSegment(t *testing.T) {
 	c.Convey("General", t, func() {
 
 		s := &cSegment{
-			input:    []rune("stuff"),
+			input:    NewRuneBuffer("stuff"),
 			matched:  false,
 			matches:  SubMatches{{0, 1}, {1, 2}, {3, 4}},
 			complete: nil,
