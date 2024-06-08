@@ -26,36 +26,38 @@ func FieldWord(flags ...string) Matcher {
 			return
 		}
 
-		this, _ := input.Get(index) // this will never fail due to previous IndexInvalid check
+		this, size, _ := input.Get(index) // this will never fail due to previous IndexInvalid check
 
 		if proceed = RuneIsALNUM(this); proceed {
 			// first rune matched the first range [a-zA-Z]
-			consumed += 1
+			consumed += size
 
 			total := input.Len()
 
 			// scan for second range runes
 			for idx := index + consumed; idx < total; {
-				r, _ := input.Get(idx)
+				if r, rs, rok := input.Get(idx); rok {
 
-				if RuneIsALNUM(r) {
-					consumed += 1
-					idx += 1
-					continue
-				}
-
-				if r == '\'' {
-					if next, ok := input.Get(idx + 1); ok {
-						// found the next rune
-						if RuneIsALNUM(next) {
-							// accept this rune
-							consumed += 1
-							idx += 1
-							continue
-						}
+					if RuneIsALNUM(r) {
+						consumed += rs
+						idx += rs
+						continue
 					}
-					// end of input reached, or next is not alnum
-					// do not consume this \' rune
+
+					if r == '\'' {
+						if next, _, ok := input.Get(idx + rs); ok {
+							// found the next rune
+							if RuneIsALNUM(next) {
+								// accept this rune
+								consumed += rs
+								idx += rs
+								continue
+							}
+						}
+						// end of input reached, or next is not alnum
+						// do not consume this \' rune
+					}
+
 				}
 
 				// stop scanning, not within second range anymore
@@ -87,25 +89,25 @@ func FieldKey(flags ...string) Matcher {
 			return
 		}
 
-		this, _ := input.Get(index)
+		this, size, _ := input.Get(index)
 
 		if proceed = RuneIsALPHA(this); proceed {
 			// matched first range [a-zA-Z]
-			consumed += 1
+			consumed += size
 			captured = scope.Capture()
 
 			total := input.Len()
 
 			var scanForward func(start int) (size int, ok bool)
 			scanForward = func(start int) (size int, ok bool) {
-				if nxt, present := input.Get(start); present {
+				if nxt, sz, present := input.Get(start); present {
 					// found the next rune
 					if RuneIsALNUM(nxt) {
 						// accept this rune
-						return 1, true
+						return sz, true
 					} else if RuneIsDashUnder(nxt) {
-						if size, ok = scanForward(start + 1); ok {
-							size += 1
+						if size, ok = scanForward(start + sz); ok {
+							size += sz
 							return size, true
 						}
 					}
@@ -115,19 +117,19 @@ func FieldKey(flags ...string) Matcher {
 
 			// scan for second range
 			for idx := index + consumed; idx < total; {
-				if r, rok := input.Get(idx); rok {
+				if r, rs, rok := input.Get(idx); rok {
 
 					if RuneIsALNUM(r) {
-						consumed += 1
-						idx += 1
+						consumed += rs
+						idx += rs
 						continue
 					}
 
 					if RuneIsDashUnder(r) {
 
-						if sz, ok := scanForward(idx + 1); ok {
-							consumed += 1 + sz
-							idx += 1 + sz
+						if sz, ok := scanForward(idx + rs); ok {
+							consumed += rs + sz
+							idx += rs + sz
 							continue
 						}
 
@@ -164,12 +166,12 @@ func Keyword(flags ...string) Matcher {
 			return
 		}
 
-		this, _ := input.Get(index)
+		this, size, _ := input.Get(index)
 
 		var plusOrMinus rune
 		if RuneIsPlusMinus(this) {
-			plusOrMinus = this
-			if this, proceed = input.Get(index + 1); !proceed {
+			plusOrMinus = this // is one byte, size overwritten by next
+			if this, size, proceed = input.Get(index + 1); !proceed {
 				return
 			}
 		}
@@ -178,11 +180,11 @@ func Keyword(flags ...string) Matcher {
 
 			if plusOrMinus > 0 {
 				// consume the previously detected keyword modifier rune
-				consumed += 1
+				consumed += 1 // just one byte
 			}
 
 			// this matched first range [a-zA-Z]
-			consumed += 1
+			consumed += size
 			if scope.Capture() {
 				captured = true
 			}
@@ -191,21 +193,21 @@ func Keyword(flags ...string) Matcher {
 
 			// scan for second range
 			for idx := index + consumed; idx < total; {
-				if r, rok := input.Get(idx); rok {
+				if r, rs, rok := input.Get(idx); rok {
 
 					if RuneIsALNUM(r) {
-						consumed += 1
-						idx += 1
+						consumed += rs
+						idx += rs
 						continue
 					}
 
 					if RuneIsDashUnder(r) {
-						if next, ok := input.Get(idx + 1); ok {
+						if next, _, ok := input.Get(idx + rs); ok {
 							// found the next rune
 							if RuneIsALNUM(next) {
 								// accept this rune
-								consumed += 1
-								idx += 1
+								consumed += rs
+								idx += rs
 								continue
 							}
 						}

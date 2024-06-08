@@ -22,7 +22,7 @@ type cPatternState struct {
 	matches Matches     // list of matches (with matched capture groups)
 }
 
-func newPatternState(p Pattern, input []rune) *cPatternState {
+func newPatternState[V []rune | []byte | string](p Pattern, input V) *cPatternState {
 	return &cPatternState{
 		input:   NewRuneBuffer(input),
 		index:   0,
@@ -40,10 +40,7 @@ func (s *cPatternState) findString(count int) (matched [][]string) {
 			if len(match) > 0 {
 				var groups []string
 				for _, submatch := range match {
-					groups = appendSlice(
-						groups,
-						string(s.input.Slice(submatch.Start(), submatch.End())),
-					)
+					groups = appendSlice(groups, s.input.String(submatch.Start(), submatch.End()-submatch.Start()))
 				}
 				matched = appendSlice(matched, groups)
 			}
@@ -95,8 +92,12 @@ func (s *cPatternState) match(count int) (matched bool) {
 		}
 
 		if last == s.index {
-			//	// pattern did not advance the index
-			s.index += 1
+			// pattern did not advance the index
+			if _, size, ok := s.input.Get(s.index); ok && size > 0 {
+				s.index += size
+			} else {
+				s.index += 1 // not sure that this is "correct"
+			}
 		}
 		last = s.index
 

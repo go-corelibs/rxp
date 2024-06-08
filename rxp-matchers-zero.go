@@ -24,7 +24,7 @@ func Caret(flags ...string) Matcher {
 
 		if scope.Multiline() {
 			// start of input or start of line
-			prev, ok := input.Get(index - 1)
+			prev, _, ok := input.Get(index - 1)
 			// if there is no previous character ~or~ the previous is a newline
 			if proceed = !ok || prev == '\n'; scope.Negated() {
 				// check negation before return
@@ -47,7 +47,7 @@ func Dollar(flags ...string) Matcher {
 
 		if scope.Multiline() {
 			// look for: end of input or end of line
-			r, ok := input.Get(index)
+			r, _, ok := input.Get(index)
 			if proceed = !ok || r == '\n'; scope.Negated() {
 				// check negation before return
 				proceed = !proceed
@@ -82,9 +82,9 @@ func B(flags ...string) Matcher {
 	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 		scope |= cfg
 
-		this, _ := input.Get(index)
-		next, _ := input.Get(index + 1)
-		prev, _ := input.Get(index - 1)
+		this, _, _ := input.Get(index)
+		next, _, _ := input.Get(index + 1)
+		prev, _, _ := input.Get(index - 1)
 
 		if index == 0 {
 
@@ -146,7 +146,7 @@ func BackRef(gid int, flags ...string) Matcher {
 		scope |= cfg
 		captured = scope.Capture()
 
-		if count := sm.Len(); count == 0 || gid > count {
+		if count := len(sm); count == 0 || gid > count { // gid > count is correct because gid is 1-indexed
 			// id is out of range (non-zero index) or no matches present
 			proceed = scope.Negated()
 			return
@@ -155,7 +155,7 @@ func BackRef(gid int, flags ...string) Matcher {
 		smidx := gid - 1 // convert the gid to the submatch 0-indexed position
 
 		group, _ := sm.Get(smidx)
-		runes := input.Slice(group.Start(), group.End())
+		runes, _ := input.Slice(group.Start(), group.End()-group.Start())
 		groupLen := group.Len()
 
 		if proceed = input.Len() >= index+groupLen; !proceed {
@@ -164,10 +164,11 @@ func BackRef(gid int, flags ...string) Matcher {
 			return
 		}
 
+		var size int
 		for idx := 0; idx < groupLen; idx++ {
 			forward := index + idx // forward position
 
-			r, _ := input.Get(forward)
+			r, rs, _ := input.Get(forward)
 
 			if scope.AnyCase() {
 				proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(r)
@@ -184,9 +185,10 @@ func BackRef(gid int, flags ...string) Matcher {
 				return
 			}
 
+			size += rs
 		}
 
-		consumed = groupLen
+		consumed = size
 		return
 	}
 }

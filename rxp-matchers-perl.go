@@ -22,7 +22,6 @@ import (
 // Text creates a Matcher for the plain text given
 func Text(text string, flags ...string) Matcher {
 	runes := []rune(text)
-	needLen := len(runes)
 
 	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
@@ -37,14 +36,15 @@ func Text(text string, flags ...string) Matcher {
 			return
 		}
 
-		for idx := 0; idx < needLen; idx++ {
+		var size int
+		for idx := 0; idx < len(runes); idx++ {
 			forward := index + idx // forward position
 			if proceed = input.Ready(forward); !proceed {
 				// forward is past EOF, OOB is not negated
 				return
 			}
 
-			r, _ := input.Get(forward)
+			r, rs, _ := input.Get(forward)
 
 			if scope.AnyCase() {
 				proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(r)
@@ -61,9 +61,10 @@ func Text(text string, flags ...string) Matcher {
 				return
 			}
 
+			size += rs
 		}
 
-		consumed = needLen
+		consumed = size
 
 		return
 	}, flags...)
@@ -73,10 +74,10 @@ func Text(text string, flags ...string) Matcher {
 func Dot(flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
-		if r, ok := input.Get(index); ok {
+		if r, rs, ok := input.Get(index); ok {
 			proceed = r != '\n' || scope.DotNL()
 			if proceed {
-				consumed = 1
+				consumed = rs
 			}
 		} else {
 			proceed = scope.Negated()
@@ -194,12 +195,12 @@ func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 	_ = unicode.Is(table, 'a') // compile-time test for panic cases
 	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
 
-		if r, ok := input.Get(index); ok {
+		if r, rs, ok := input.Get(index); ok {
 			if proceed = unicode.Is(table, r); scope.Negated() {
 				proceed = !proceed
 			}
 			if proceed {
-				consumed += 1
+				consumed += rs
 			}
 		}
 

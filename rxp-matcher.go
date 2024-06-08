@@ -42,12 +42,12 @@ type RuneMatcher func(r rune) bool
 func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
 		if input.Ready(index) {
-			r, _ := input.Get(index)
+			r, size, _ := input.Get(index)
 			if proceed = matcher(r); scope.Negated() {
 				proceed = !proceed
 			}
 			if proceed {
-				consumed += 1
+				consumed += size
 				captured = scope.Capture()
 			}
 		}

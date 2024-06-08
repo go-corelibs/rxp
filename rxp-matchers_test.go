@@ -27,13 +27,13 @@ func TestMatchers(t *testing.T) {
 		c.So(
 			Pattern{}.
 				Add(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
-					if prev, ok := input.Get(index - 1); ok {
+					if prev, _, ok := input.Prev(index); ok {
 						if prev == 'o' {
-							if this, ok := input.Get(index); ok {
+							if this, size, ok := input.Get(index); ok {
 								if this == 'n' {
-									if next, ok := input.Get(index + 1); ok {
+									if next, _, ok := input.Get(index + size); ok {
 										if next == 'e' {
-											consumed += 1
+											consumed += size
 											captured = true
 											proceed = true
 											return
