@@ -22,16 +22,78 @@ import (
 // to the same extent as is the case of sync.Append
 var spStringBuilder = sync.NewStringBuilderPool(1)
 
-// appendSlice is a slightly better option than stock append and using the one
-// from go-corelibs/x-sync crosses the package boundary and actually makes a
-// difference in must-fast-path scenarios
-func appendSlice[V interface{}](slice []V, data ...V) []V {
-	m := len(slice)     // current length
-	n := m + len(data)  // needed length
-	if n > cap(slice) { // current cap size
-		grown := make([]V, ((m+1)*2)+n) // double the existing space
-		copy(grown, slice)              // transfer to new slice
-		slice = grown                   // grown becomes slice
+func pushString(slice []string, data string) []string {
+	m := len(slice)
+	n := m + 1
+	if n > cap(slice) {
+		grown := make([]string, ((m+1)*2)+n) // double the existing space
+		copy(grown, slice)                   // transfer to new slice
+		slice = grown                        // grown becomes slice
+	}
+	slice = slice[0:n] // truncate in case too many present
+	slice[n-1] = data  // populate with data
+	return slice
+}
+
+func pushStrings(slice [][]string, data ...[]string) [][]string {
+	m := len(slice)
+	n := m + len(data)
+	if n > cap(slice) {
+		grown := make([][]string, ((m+1)*2)+n) // double the existing space
+		copy(grown, slice)                     // transfer to new slice
+		slice = grown                          // grown becomes slice
+	}
+	slice = slice[0:n]     // truncate in case too many present
+	copy(slice[m:n], data) // populate with data
+	return slice
+}
+
+func pushRunes(slice []rune, data ...rune) []rune {
+	m := len(slice)
+	n := m + len(data)
+	if n > cap(slice) {
+		grown := make([]rune, ((m+1)*2)+n) // double the existing space
+		copy(grown, slice)                 // transfer to new slice
+		slice = grown                      // grown becomes slice
+	}
+	slice = slice[0:n]     // truncate in case too many present
+	copy(slice[m:n], data) // populate with data
+	return slice
+}
+
+func pushMatch(slice [][][2]int, data [][2]int) [][][2]int {
+	m := len(slice)
+	n := m + 1
+	if n > cap(slice) {
+		grown := make([][][2]int, ((m+1)*2)+n) // double the existing space
+		copy(grown, slice)                     // transfer to new slice
+		slice = grown                          // grown becomes slice
+	}
+	slice = slice[0:n] // truncate in case too many present
+	slice[n-1] = data
+	return slice
+}
+
+func pushSMSlice(slice [][2]int, start, end int) [][2]int {
+	m := len(slice)
+	n := m + 1
+	if n > cap(slice) {
+		grown := make([][2]int, ((m+1)*2)+n) // double the existing space
+		copy(grown, slice)                   // transfer to new slice
+		slice = grown                        // grown becomes slice
+	}
+	slice = slice[0:n]              // truncate in case too many present
+	slice[n-1] = [2]int{start, end} // populate with data
+	return slice
+}
+
+func pushSegments(slice Segments, data ...Segment) Segments {
+	m := len(slice)
+	n := m + len(data)
+	if n > cap(slice) {
+		grown := make(Segments, ((m+1)*2)+n) // double the existing space
+		copy(grown, slice)                   // transfer to new slice
+		slice = grown                        // grown becomes slice
 	}
 	slice = slice[0:n]     // truncate in case too many present
 	copy(slice[m:n], data) // populate with data
