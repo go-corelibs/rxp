@@ -23,16 +23,18 @@ import (
 func TestRuneBuffer(t *testing.T) {
 	c.Convey("RuneBuffer", t, func() {
 
-		rb := NewRuneBuffer([]rune("stuff"))
+		rb := NewRuneBuffer("stuff")
 		// len
 		c.So(rb.Len(), c.ShouldEqual, 5)
 		// get
-		r, ok := rb.Get(2)
+		r, size, ok := rb.Get(2)
 		c.So(ok, c.ShouldBeTrue)
 		c.So(r, c.ShouldEqual, 'u')
-		r, ok = rb.Get(6)
+		c.So(size, c.ShouldEqual, 1)
+		r, size, ok = rb.Get(6)
 		c.So(ok, c.ShouldBeFalse)
 		c.So(r, c.ShouldEqual, rune(0))
+		c.So(size, c.ShouldEqual, 0)
 		// ready
 		c.So(rb.Ready(0), c.ShouldBeTrue)
 		c.So(rb.Ready(5), c.ShouldBeFalse)
@@ -49,11 +51,14 @@ func TestRuneBuffer(t *testing.T) {
 		c.So(rb.End(5), c.ShouldBeTrue)
 		c.So(rb.End(6), c.ShouldBeFalse)
 		// slice
-		c.So(rb.Slice(1, 5), c.ShouldEqual, []rune("tuff"))
-		c.So(rb.Slice(5, 6), c.ShouldEqual, []rune(nil))
+		slice, total := rb.Slice(1, 4)
+		c.So(slice, c.ShouldEqual, []rune("tuff"))
+		c.So(total, c.ShouldEqual, 4)
+		slice, total = rb.Slice(5, 1)
+		c.So(slice, c.ShouldEqual, []rune(nil))
+		c.So(total, c.ShouldEqual, 0)
 		// string
-		c.So(rb.String(1, -1), c.ShouldEqual, "tuff")
-		c.So(rb.String(1, 5), c.ShouldEqual, "tuff")
+		c.So(rb.String(1, 4), c.ShouldEqual, "tuff")
 		c.So(rb.String(5, 6), c.ShouldEqual, "")
 
 	})

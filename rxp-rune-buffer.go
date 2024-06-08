@@ -15,49 +15,48 @@
 package rxp
 
 import (
-	sync "github.com/go-corelibs/x-sync"
+	"github.com/go-corelibs/runes"
 )
 
-var (
-	spRuneBuffer = sync.NewPool(1, func() *RuneBuffer {
-		return &RuneBuffer{}
-	}, func(v *RuneBuffer) *RuneBuffer {
-		// getter
-		return v
-	}, func(v *RuneBuffer) *RuneBuffer {
-		// setter
-		v.buf = nil
-		return v
-	})
-)
+//var (
+//	spRuneBuffer = sync.NewPool(1, func() *RuneBuffer {
+//		return &RuneBuffer{}
+//	}, nil, func(v *RuneBuffer) *RuneBuffer {
+//		// setter
+//		v.buf = nil
+//		return v
+//	})
+//)
 
 // RuneBuffer is an efficient rune based buffer
 type RuneBuffer struct {
 	len int
-	buf []rune
+	buf runes.Reader
 }
 
 // NewRuneBuffer creates a new RuneBuffer instance for the given input string
-func NewRuneBuffer(input []rune) *RuneBuffer {
-	rb := spRuneBuffer.Get()
+func NewRuneBuffer[V []rune | []byte | string](input V) *RuneBuffer {
+	//rb := spRuneBuffer.Get()
+	rb := &RuneBuffer{}
 	rb.len = len(input)
-	rb.buf = input
+	rb.buf = runes.NewReader(input)
 	return rb
 }
 
 func (rb *RuneBuffer) recycle() {
-	spRuneBuffer.Put(rb)
+	// BUG: recycling a RuneBuffer causes compile time issues
+	//spRuneBuffer.Put(rb)
 }
 
 // Len returns the total number of runes in the RuneBuffer
 func (rb *RuneBuffer) Len() int {
-	return len(rb.buf)
+	return rb.len
 }
 
 // Get returns the Ready rune at the given index position
-func (rb *RuneBuffer) Get(index int) (r rune, ok bool) {
+func (rb *RuneBuffer) Get(index int) (r rune, size int, ok bool) {
 	if ok = rb.Ready(index); ok {
-		r = rb.buf[index]
+		r, size, _ = rb.buf.ReadRuneAt(int64(index))
 	}
 	return
 }
@@ -86,39 +85,55 @@ func (rb *RuneBuffer) End(index int) (end bool) {
 	return index == rb.len
 }
 
+// Prev returns the Ready rune before the given index position, or \0 if not
+// Ready
+//
+// The Prev is necessary because to find the previous rune to the given index,
+// Prev must incrementally scan backwards up to four bytes, trying to read a
+// rune without error with each iteration
+func (rb *RuneBuffer) Prev(index int) (r rune, size int, ok bool) {
+	var err error
+	if index > 0 {
+		if r, size, err = rb.buf.ReadPrevRuneFrom(int64(index)); err == nil {
+			ok = true
+			return
+		}
+	}
+	// this is no previous rune from the given index
+	return 0, 0, false
+}
+
+// Next returns the Ready rune after the given index position, or \0 if not
+// Ready
+//
+// The Next method is necessary because to find the next rune to the given
+// index, Next must first read the rune starting at index and then read the
+// rune for the next
+func (rb *RuneBuffer) Next(index int) (r rune, size int, ok bool) {
+	var err error
+	if r, size, err = rb.buf.ReadNextRuneFrom(int64(index)); err == nil {
+		ok = true
+		return
+	}
+	// this is no previous rune from the given index
+	return 0, 0, false
+}
+
 // Slice returns the range of runes from start (inclusive) to end (exclusive)
 // if the entire range is Ready
-func (rb *RuneBuffer) Slice(start, end int) (slice []rune) {
-	//slice = rb.buf[start:end]
-	if end >= 0 {
-		if rb.Ready(start) && rb.Valid(end) {
-			slice = rb.buf[start:end]
-		}
-	} else {
-		if rb.Ready(start) {
-			slice = rb.buf[start:]
-		}
+func (rb *RuneBuffer) Slice(index, count int) (slice []rune, size int) {
+	if rb.Ready(index) {
+		slice, size, _ = rb.buf.ReadRuneSlice(int64(index), int64(count))
 	}
 	return
 }
 
 // String returns the string of runes from start (inclusive) to end (exclusive)
 // if the entire range is Ready
-func (rb *RuneBuffer) String(start, end int) (slice string) {
-	buf := spStringBuilder.Get()
-	defer spStringBuilder.Put(buf)
-	if start <= end {
-		if rb.Ready(start) && rb.Valid(end) {
-			for _, r := range rb.buf[start:end] {
-				buf.WriteRune(r)
-			}
-		}
-	} else if start >= 0 && end <= 0 {
-		if rb.Ready(start) {
-			for _, r := range rb.buf[start:] {
-				buf.WriteRune(r)
-			}
-		}
+func (rb *RuneBuffer) String(index, count int) (slice string) {
+	if rb.Ready(index) {
+		runes, _, _ := rb.buf.ReadRuneSlice(int64(index), int64(count))
+		return string(runes)
 	}
-	return buf.String()
+	return ""
 }
