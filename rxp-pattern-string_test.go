@@ -22,7 +22,7 @@ import (
 	c "github.com/smartystreets/goconvey/convey"
 )
 
-func TestPattern(t *testing.T) {
+func TestPatternString(t *testing.T) {
 
 	c.Convey("MatchString", t, func() {
 
