@@ -105,10 +105,6 @@ func (rb *RuneBuffer) Prev(index int) (r rune, size int, ok bool) {
 
 // Next returns the Ready rune after the given index position, or \0 if not
 // Ready
-//
-// The Next method is necessary because to find the next rune to the given
-// index, Next must first read the rune starting at index and then read the
-// rune for the next
 func (rb *RuneBuffer) Next(index int) (r rune, size int, ok bool) {
 	var err error
 	if r, size, err = rb.buf.ReadNextRuneFrom(int64(index)); err == nil {
