@@ -22,6 +22,15 @@ import (
 	"unicode"
 )
 
+//go:embed testdata/random.txt
+var gTestDataRandomString string
+
+var gTestDataRandomRunes []rune
+
+func init() {
+	gTestDataRandomRunes = []rune(gTestDataRandomString)
+}
+
 func xTextNoLoop(text string, flags ...string) Matcher {
 	runes := []rune(text)
 	needLen := len(runes)
@@ -41,7 +50,7 @@ func xTextNoLoop(text string, flags ...string) Matcher {
 				return
 			}
 
-			if maybe := string(input.Slice(index, end)); scope.AnyCase() {
+			if maybe := input.String(index, end-index); scope.AnyCase() {
 				proceed = strings.ToLower(text) == strings.ToLower(maybe)
 			} else {
 				proceed = text == maybe
@@ -65,11 +74,11 @@ func xTextNoLoop(text string, flags ...string) Matcher {
 }
 
 func Benchmark_Text_Nope(b *testing.B) {
-	_ = Pattern{xTextNoLoop("lorem", "i")}.FindAllString(gTestDataRandomTxt, -1)
+	_ = Pattern{xTextNoLoop("lorem", "i")}.FindAllString(gTestDataRandomString, -1)
 }
 
 func Benchmark_Text_Loop(b *testing.B) {
-	_ = Pattern{Text("lorem", "i")}.FindAllString(gTestDataRandomTxt, -1)
+	_ = Pattern{Text("lorem", "i")}.FindAllString(gTestDataRandomString, -1)
 }
 
 func Benchmark_ScanString_Regexp(b *testing.B) {
@@ -83,33 +92,33 @@ func Benchmark_ScanString_Regexp(b *testing.B) {
 
 	// FieldWord equivalent regexp pattern:
 	pattern := `(?ms)(\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)`
-	m := regexp.MustCompile(pattern).FindAllStringIndex(gTestDataRandomTxt, -1)
+	m := regexp.MustCompile(pattern).FindAllStringIndex(gTestDataRandomString, -1)
 	var results []string
 	var last int
 	for _, mm := range m {
 		if last < mm[0] {
-			results = append(results, gTestDataRandomTxt[last:mm[0]])
+			results = append(results, gTestDataRandomString[last:mm[0]])
 			last = mm[0]
 		}
-		results = append(results, gTestDataRandomTxt[mm[0]:mm[1]])
+		results = append(results, gTestDataRandomString[mm[0]:mm[1]])
 	}
 }
 
 func Benchmark_ScanString_Rxp(b *testing.B) {
-	_ = Pattern{FieldWord("c")}.ScanStrings(gTestDataRandomTxt).Strings()
+	_ = Pattern{FieldWord("c")}.ScanRunes(gTestDataRandomRunes).Strings()
 }
 
 func Benchmark_FindAllString_Regexp(b *testing.B) {
 	_ = regexp.MustCompile(`(?ms)(\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)`).
-		FindAllString(gTestDataRandomTxt, -1)
+		FindAllString(gTestDataRandomString, -1)
 }
 
 func Benchmark_FindAllString_Rxp(b *testing.B) {
-	_ = Pattern{FieldWord("c")}.FindAllString(gTestDataRandomTxt, -1)
+	_ = Pattern{FieldWord("c")}.FindAllString(gTestDataRandomString, -1)
 }
 
 func Benchmark_Pipeline_Combo_Regexp(b *testing.B) {
-	o := strings.TrimSpace(gTestDataRandomTxt)
+	o := strings.TrimSpace(gTestDataRandomString)
 	o = regexp.MustCompile(`(?ms)([^a-zA-Z0-9]+)`).ReplaceAllString(o, "_") // [^a-zA-Z0-9]
 	o = regexp.MustCompile(`(?ms)(\s+)`).ReplaceAllString(o, "_")           // \s+
 	_ = strings.ToLower(o)
@@ -142,12 +151,12 @@ func Benchmark_Pipeline_Combo_Rxp(b *testing.B) {
 			},
 		},
 		{Transform: strings.ToLower},
-	}.Process(gTestDataRandomTxt)
+	}.Process(gTestDataRandomString)
 }
 
 func Benchmark_Pipeline_Readme_Regexp(b *testing.B) {
 	// using regexp:
-	output := strings.ToLower(gTestDataRandomTxt)
+	output := strings.ToLower(gTestDataRandomString)
 	output = regexp.MustCompile(`\s+`).ReplaceAllString(output, " ")
 	output = regexp.MustCompile(`[']`).ReplaceAllString(output, "_")
 	_ = regexp.MustCompile(`[^\w\s]+`).ReplaceAllString(output, "")
@@ -159,12 +168,12 @@ func Benchmark_Pipeline_Readme_Rxp(b *testing.B) {
 		ReplaceText(S("+"), " ").
 		ReplaceText(Text("'"), "_").
 		ReplaceText(Not(W(), S(), "+"), "").
-		Process(gTestDataRandomTxt)
+		Process(gTestDataRandomString)
 }
 
 func Benchmark_Replace_ToUpper_Regexp(b *testing.B) {
 	for i := 1; i < 10; i += 1 {
-		_ = regexp.MustCompile(`(?ms)(\pL+)`).ReplaceAllStringFunc(gTestDataRandomTxt, func(s string) string {
+		_ = regexp.MustCompile(`(?ms)(\pL+)`).ReplaceAllStringFunc(gTestDataRandomString, func(s string) string {
 			return strings.ToUpper(s)
 		})
 	}
@@ -173,9 +182,7 @@ func Benchmark_Replace_ToUpper_Regexp(b *testing.B) {
 func Benchmark_Replace_ToUpper_Rxp(b *testing.B) {
 	for i := 1; i < 10; i += 1 {
 		_ = Pattern{}.RangeTable(unicode.L, "+", "m", "s", "c").
-			ReplaceAllString(gTestDataRandomTxt, Replace{}.ToUpper())
+			ReplaceAllString(gTestDataRandomString, Replace{}.ToUpper())
 	}
 }
 
-//go:embed testdata/random.txt
-var gTestDataRandomTxt string
