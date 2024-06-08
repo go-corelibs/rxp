@@ -20,7 +20,7 @@ import (
 
 // Caret creates a Matcher equivalent to the regexp caret [^]
 func Caret(flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
 			// start of input or start of line
@@ -43,7 +43,7 @@ func Caret(flags ...string) Matcher {
 
 // Dollar creates a Matcher equivalent to the regexp [$]
 func Dollar(flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if scope.Multiline() {
 			// look for: end of input or end of line
@@ -67,7 +67,7 @@ func Dollar(flags ...string) Matcher {
 // A creates a Matcher equivalent to the regexp [\A]
 func A(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 		scope |= cfg
 		if proceed = index == 0; scope.Negated() {
 			proceed = !proceed
@@ -79,7 +79,7 @@ func A(flags ...string) Matcher {
 // B creates a Matcher equivalent to the regexp [\b]
 func B(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 		scope |= cfg
 
 		this, _, _ := input.Get(index)
@@ -124,7 +124,7 @@ func B(flags ...string) Matcher {
 // Z is a Matcher equivalent to the regexp [\z]
 func Z(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 		scope |= cfg
 		if proceed = input.Invalid(index); scope.Negated() {
 			proceed = !proceed
@@ -142,21 +142,20 @@ func BackRef(gid int, flags ...string) Matcher {
 		panic("BackRef requires a positive non-zero gid argument")
 	}
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool) {
 		scope |= cfg
 		captured = scope.Capture()
 
-		if count := len(sm); count == 0 || gid > count { // gid > count is correct because gid is 1-indexed
+		if count := len(sm); count == 0 || gid >= count { // gid > count is correct because gid is 1-indexed
 			// id is out of range (non-zero index) or no matches present
 			proceed = scope.Negated()
 			return
 		}
 
-		smidx := gid - 1 // convert the gid to the submatch 0-indexed position
-
-		group, _ := sm.Get(smidx)
-		runes, _ := input.Slice(group.Start(), group.End()-group.Start())
-		groupLen := group.Len()
+		//groupStart, groupEnd, _ := sm.Get(gid)
+		groupStart, groupEnd := sm[gid][0], sm[gid][1]
+		groupLen := groupEnd - groupStart
+		runes, _ := input.Slice(groupStart, groupLen)
 
 		if proceed = input.Len() >= index+groupLen; !proceed {
 			// forward is past EOF, OOB is not negated

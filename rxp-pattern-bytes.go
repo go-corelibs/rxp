@@ -30,7 +30,7 @@ func (p Pattern) FindIndex(input string) (found []int) {
 		defer s.recycle()
 		if s.match(1) {
 			mm := s.matches[0]
-			found = []int{mm[0].Start(), mm[0].End()}
+			found = []int{mm[0][0], mm[0][1]}
 		}
 		s.matches = nil
 	}

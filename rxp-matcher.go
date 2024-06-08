@@ -29,7 +29,7 @@ package rxp
 //	| captured | indicate this is a capture group   |
 //	| negated  | indicate this group is negated     |
 //	| proceed  | matched success, match for more    |
-type Matcher func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured, negated, proceed bool)
+type Matcher func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool)
 
 // RuneMatcher is the signature for the basic character matching functions
 // such as RuneIsWord
@@ -40,7 +40,7 @@ type RuneMatcher func(r rune) bool
 
 // WrapMatcher wraps a RuneMatcher with MakeMatcher with support for negations
 func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool) {
 		if input.Ready(index) {
 			r, size, _ := input.Get(index)
 			if proceed = matcher(r); scope.Negated() {
@@ -60,7 +60,7 @@ func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
 // around a given RuneMatcher
 func MakeMatcher(match Matcher, flags ...string) Matcher {
 	cfgReps, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured, negated, proceed bool) {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool) {
 		scope |= cfg
 		if cfgReps != nil {
 			reps = cfgReps

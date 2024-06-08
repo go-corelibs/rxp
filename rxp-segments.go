@@ -34,7 +34,7 @@ func (m Segments) String() string {
 
 func (m Segments) Strings() (found []string) {
 	for _, match := range m {
-		found = appendSlice(found, match.String())
+		found = pushString(found, match.String())
 	}
 	return
 }

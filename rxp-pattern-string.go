@@ -42,7 +42,7 @@ func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
 		defer s.recycle()
 		if s.match(count) {
 			for _, mm := range s.matches {
-				found = append(found, []int{mm[0].Start(), mm[0].End()})
+				found = append(found, []int{mm[0][0], mm[0][1]})
 			}
 		}
 		s.matches = nil
@@ -60,7 +60,7 @@ func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]strin
 	return
 }
 
-func (p Pattern) FindAllStringSubmatchIndex(input string, count int) (found Matches) {
+func (p Pattern) FindAllStringSubmatchIndex(input string, count int) (found [][][2]int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
 		defer s.recycle()
@@ -79,7 +79,7 @@ func (p Pattern) FindString(input string) string {
 	return ""
 }
 
-func (p Pattern) FindStringIndex(input string, count int) (found SubMatch) {
+func (p Pattern) FindStringIndex(input string, count int) (found [2]int) {
 	if mm := p.FindStringSubmatchIndex(input, count); len(mm) > 0 {
 		return mm[0]
 	}
@@ -98,11 +98,11 @@ func (p Pattern) FindStringSubmatch(input string) (found []string) {
 	return
 }
 
-func (p Pattern) FindStringSubmatchIndex(input string, count int) (found SubMatches) {
+func (p Pattern) FindStringSubmatchIndex(input string, count int) (found [][2]int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
 		defer s.recycle()
-		if s.match(count) && s.matches.Len() > 0 {
+		if s.match(count) && len(s.matches) > 0 {
 			found = s.matches[0]
 		}
 		s.matches = nil
@@ -119,10 +119,10 @@ func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 			defer spStringBuilder.Put(buf)
 			var last int
 			for _, match := range s.matches {
-				if last < match.Start() {
-					buf.WriteString(s.input.String(last, match.Start()-last))
+				if last < match[0][0] {
+					buf.WriteString(s.input.String(last, match[0][0]-last))
 				}
-				last = match.End()
+				last = match[0][1]
 				for _, rpl := range repl {
 					buf.WriteString(rpl(&cSegment{
 						input:   s.input,
@@ -149,12 +149,12 @@ func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 			buf := spStringBuilder.Get()
 			defer spStringBuilder.Put(buf)
 			var last int
-			for _, match := range s.matches {
-				if last < match.Start() {
-					buf.WriteString(s.input.String(last, match.Start()-last))
+			for _, group := range s.matches {
+				if last < group[0][0] {
+					buf.WriteString(s.input.String(last, group[0][0]-last))
 				}
-				last = match.End()
-				buf.WriteString(repl(s.input.String(match.Start(), match.End()-match.Start())))
+				last = group[0][1]
+				buf.WriteString(repl(s.input.String(group[0][0], group[0][1]-group[0][0])))
 			}
 			if last < s.input.Len() {
 				buf.WriteString(s.input.String(last, s.input.Len()-last))

@@ -26,7 +26,7 @@ func TestSegment(t *testing.T) {
 		s := &cSegment{
 			input:    NewRuneBuffer("stuff"),
 			matched:  false,
-			matches:  SubMatches{{0, 1}, {1, 2}, {3, 4}},
+			matches:  [][2]int{{0, 1}, {1, 2}, {3, 4}},
 			complete: nil,
 		}
 

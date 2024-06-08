@@ -46,7 +46,7 @@ type Segment interface {
 type cSegment struct {
 	input    *RuneBuffer
 	matched  bool
-	matches  SubMatches
+	matches  [][2]int
 	complete *string
 }
 
@@ -59,8 +59,8 @@ func (r *cSegment) Match() bool {
 func (r *cSegment) Runes() (runes []rune) {
 
 	for _, m := range r.matches {
-		slice, _ := r.input.Slice(m.Start(), m.End()-m.Start())
-		runes = appendSlice(runes, slice...)
+		slice, _ := r.input.Slice(m[0], m[1]-m[0])
+		runes = pushRunes(runes, slice...)
 	}
 
 	return
@@ -73,12 +73,12 @@ func (r *cSegment) String() string {
 
 	var buf strings.Builder
 	if len(r.matches) == 1 {
-		buf.WriteString(r.input.String(r.matches[0].Start(), r.matches[0].End()-r.matches[0].Start()))
+		buf.WriteString(r.input.String(r.matches[0][0], r.matches[0][1]-r.matches[0][0]))
 	} else {
 		for _, m := range r.matches[1:] {
 			// skip first which is the entire matched text
-			// regardless of m.capture state
-			buf.WriteString(r.input.String(m.Start(), m.End()-m.Start()))
+			// write string regardless of capture state
+			buf.WriteString(r.input.String(m[0], m[1]-m[0]))
 		}
 	}
 
@@ -87,13 +87,13 @@ func (r *cSegment) String() string {
 }
 
 func (r *cSegment) Index() []int {
-	return []int{r.matches.Start(), r.matches.End()}
+	return []int{r.matches[0][0], r.matches[0][1]}
 }
 
 func (r *cSegment) Submatch(idx int) (value string, ok bool) {
 	if ok = 0 <= idx+1 && idx+1 < len(r.matches); ok {
 		m := r.matches[idx+1]
-		value = r.input.String(m.Start(), m.End()-m.Start())
+		value = r.input.String(m[0], m[1]-m[0])
 	}
 	return
 }

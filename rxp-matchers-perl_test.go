@@ -123,7 +123,7 @@ func TestMatchersClassPerl(t *testing.T) {
 
 			{
 				input: "stuff @func/more/stuff",
-				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 					// not capturing on purpose
 					this, size, okt := input.Get(index)
 					if proceed = okt && this == '@'; proceed {

@@ -19,7 +19,7 @@ type cPatternState struct {
 	index   int         // current match position (total runes consumed)
 	pattern Pattern     // list of fragments to satisfy as a match
 	capture []bool      // denotes corresponding matches are capture groups or not
-	matches Matches     // list of matches (with matched capture groups)
+	matches [][][2]int  // list of matches (with matched capture groups)
 }
 
 func newPatternState[V []rune | []byte | string](p Pattern, input V) *cPatternState {
@@ -27,6 +27,7 @@ func newPatternState[V []rune | []byte | string](p Pattern, input V) *cPatternSt
 		input:   NewRuneBuffer(input),
 		index:   0,
 		pattern: p,
+		matches: [][][2]int{},
 	}
 }
 
@@ -40,9 +41,9 @@ func (s *cPatternState) findString(count int) (matched [][]string) {
 			if len(match) > 0 {
 				var groups []string
 				for _, submatch := range match {
-					groups = appendSlice(groups, s.input.String(submatch.Start(), submatch.End()-submatch.Start()))
+					groups = pushString(groups, s.input.String(submatch[0], submatch[1]-submatch[0]))
 				}
-				matched = appendSlice(matched, groups)
+				matched = pushStrings(matched, groups)
 			}
 		}
 	}
@@ -56,18 +57,19 @@ func (s *cPatternState) match(count int) (matched bool) {
 	var completed int          // track completed Matcher count
 	required := len(s.pattern) // completed requirement
 
+	set := [][2]int{{}}
+
 	// while there is input to process
 	for s.input.Valid(s.index) {
 
 		start := s.index
-		var subMatches SubMatches
 
 		// for each matcher in the pattern
 		for _, matcher := range s.pattern {
 			// call each matcher once, expecting matcher to progress the index
-			if cons, capt, _, proceed := matcher(DefaultFlags, gDefaultReps, s.input, s.index, subMatches); proceed {
+			if cons, capt, _, proceed := matcher(DefaultFlags, gDefaultReps, s.input, s.index, set); proceed {
 				if capt {
-					subMatches = appendSlice(subMatches, []int{s.index, s.index + cons})
+					set = pushSMSlice(set, s.index, s.index+cons)
 				}
 				s.index += cons
 				completed += 1
@@ -75,14 +77,18 @@ func (s *cPatternState) match(count int) (matched bool) {
 			}
 			// pattern did not match correctly
 			completed = 0
+			if len(set) > 1 {
+				set = [][2]int{{}}
+			}
 			break
 		}
 
 		if completed >= required {
-			if len(subMatches) > 0 {
-				s.matches = appendSlice(s.matches, append(SubMatches{SubMatch{start, s.index}}, subMatches...))
-			} else if start != s.index {
-				s.matches = appendSlice(s.matches, SubMatches{SubMatch{start, s.index}})
+			if len(set) > 1 || start != s.index {
+				set[0][0] = start
+				set[0][1] = s.index
+				s.matches = pushMatch(s.matches, set)
+				set = [][2]int{{}}
 			}
 			if count > 0 && count >= completed {
 				// early out, optimized for Pattern.Segment() calls
@@ -94,9 +100,9 @@ func (s *cPatternState) match(count int) (matched bool) {
 		if last == s.index {
 			// pattern did not advance the index
 			if _, size, ok := s.input.Get(s.index); ok && size > 0 {
-				s.index += size
+				s.index += size // move the needle correctly
 			} else {
-				s.index += 1 // not sure that this is "correct"
+				s.index += 1 // must move the needle to progress
 			}
 		}
 		last = s.index

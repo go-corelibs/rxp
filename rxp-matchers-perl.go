@@ -23,7 +23,7 @@ import (
 func Text(text string, flags ...string) Matcher {
 	runes := []rune(text)
 
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		// scan ahead without consuming runes
 
@@ -72,7 +72,7 @@ func Text(text string, flags ...string) Matcher {
 
 // Dot creates a Matcher equivalent to the regexp dot (.)
 func Dot(flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if r, rs, ok := input.Get(index); ok {
 			proceed = r != '\n' || scope.DotNL()
@@ -193,7 +193,7 @@ func NamedClass(name AsciiNames, flags ...string) Matcher {
 //	IsUnicodeRange(unicode.Braille)
 func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 	_ = unicode.Is(table, 'a') // compile-time test for panic cases
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm SubMatches) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
 
 		if r, rs, ok := input.Get(index); ok {
 			if proceed = unicode.Is(table, r); scope.Negated() {

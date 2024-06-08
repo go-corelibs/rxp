@@ -141,12 +141,12 @@ func TestPatternString(t *testing.T) {
 			input   string
 			pattern Pattern
 			count   int
-			output  Matches
+			output  [][][2]int
 		}{
 
-			{input: "", pattern: nil, count: -1, output: Matches(nil)},
-			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: 1, output: Matches{{{0, 1}, {0, 1}}}},
-			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: Matches{
+			{input: "", pattern: nil, count: -1, output: [][][2]int(nil)},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: 1, output: [][][2]int{{{0, 1}, {0, 1}}}},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: [][][2]int{
 				{{0, 1}, {0, 1}},
 				{{1, 2}, {1, 2}},
 			}},

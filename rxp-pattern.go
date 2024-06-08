@@ -24,7 +24,7 @@ func (p Pattern) scanner(s *cPatternState) (segments Segments) {
 		return []Segment{&cSegment{
 			input:   s.input,
 			matched: false,
-			matches: SubMatches{SubMatch{0, s.input.Len()}},
+			matches: [][2]int{{0, s.input.Len()}},
 		}}
 	}
 
@@ -32,33 +32,33 @@ func (p Pattern) scanner(s *cPatternState) (segments Segments) {
 		return []Segment{&cSegment{
 			input:   s.input,
 			matched: false,
-			matches: SubMatches{SubMatch{0, s.input.Len()}},
+			matches: [][2]int{{0, s.input.Len()}},
 		}}
 	}
 
 	var last int
-	for _, match := range s.matches {
-		if last < match.Start() {
-			segments = appendSlice[Segment](segments, &cSegment{
+	for _, group := range s.matches {
+		if last < group[0][0] {
+			segments = pushSegments(segments, &cSegment{
 				input:   s.input,
 				matched: false,
-				matches: SubMatches{SubMatch{last, match.Start()}},
+				matches: [][2]int{{last, group[0][0]}},
 			})
 		}
-		last = match.End()
+		last = group[0][1]
 
-		segments = appendSlice[Segment](segments, &cSegment{
+		segments = pushSegments(segments, &cSegment{
 			input:   s.input,
 			matched: true,
-			matches: match,
+			matches: group,
 		})
 	}
 
 	if last < s.input.Len() {
-		segments = appendSlice[Segment](segments, &cSegment{
+		segments = pushSegments(segments, &cSegment{
 			input:   s.input,
 			matched: false,
-			matches: SubMatches{SubMatch{last, s.input.Len()}},
+			matches: [][2]int{{last, s.input.Len()}},
 		})
 	}
 	s.matches = nil
