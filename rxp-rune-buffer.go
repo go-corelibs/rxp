@@ -21,14 +21,14 @@ import (
 // RuneBuffer is an efficient rune based buffer
 type RuneBuffer struct {
 	len int
-	buf runes.Reader
+	buf runes.RuneReader
 }
 
 // NewRuneBuffer creates a new RuneBuffer instance for the given input string
 func NewRuneBuffer[V []rune | []byte | string](input V) *RuneBuffer {
 	rb := &RuneBuffer{}
 	rb.len = len(input)
-	rb.buf = runes.NewReader(input)
+	rb.buf = runes.NewRuneReader(input)
 	return rb
 }
 
