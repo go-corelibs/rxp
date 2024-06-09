@@ -17,7 +17,7 @@ package rxp
 func (p Pattern) Match(input []byte) (ok bool) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		ok = s.match(1)
+		ok = p.match(s, 1)
 		s.matches = nil
 	}
 	return
@@ -26,7 +26,7 @@ func (p Pattern) Match(input []byte) (ok bool) {
 func (p Pattern) FindIndex(input string) (found []int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		if s.match(1) {
+		if p.match(s, 1) {
 			mm := s.matches[0]
 			found = []int{mm[0][0], mm[0][1]}
 		}

@@ -14,54 +14,71 @@
 
 package rxp
 
+// Split slices the input into substrings separated by the Pattern and returns a
+// slice of the substrings between those Pattern matches.
+//
+// The slice returned by this method consists of all the substrings of input
+// not contained in the slice returned by [Pattern.FindAllString].
+//
+// Example:
+//
+//	s := regexp.MustCompile("a*").Split("abaabaccadaaae", 5)
+//	// s: ["", "b", "b", "c", "cadaaae"]
+//
+// The count determines the number of substrings to return:
+//
+//	| Value Case | Description                                                       |
+//	|------------|-------------------------------------------------------------------|
+//	| count > 0  | at most count substrings; the last will be the un-split remainder |
+//	| count == 0 | the result is nil (zero substrings)                               |
+//	| count < 0  | all substrings                                                    |
+func (p Pattern) Split(input string, count int) (found []string) {
+	if count == 0 || input == "" || len(p) == 0 {
+		return // zero substrings
+	}
+
+	s := newPatternState(p, input)
+	// get the complete match set first
+	if p.match(s, -1) {
+
+		var countPresent, remainder bool
+		var lastMatchEnd int
+		for idx, groups := range s.matches {
+
+			if countPresent = count == idx+1; countPresent {
+				// at most count substrings; the last will be the un-split remainder
+				found = pushString(found, s.input.String(lastMatchEnd, -1))
+				break
+			}
+
+			if idx == 0 {
+				if groups[0][1]-groups[0][0] == 0 {
+					continue // skip first index zero-width
+				}
+				found = pushString(found, s.input.String(0, groups[0][0]))
+			} else if lastMatchEnd < groups[0][0] {
+				// unmatched text
+				found = pushString(found, s.input.String(lastMatchEnd, groups[0][0]-lastMatchEnd))
+			} else if idx == len(s.matches)-1 {
+				remainder = true
+			}
+
+			lastMatchEnd = groups[0][1] // update progress
+		}
+
+		if !countPresent && remainder {
+			found = pushString(found, s.input.String(lastMatchEnd, -1))
+		}
+
+	}
+	s.matches = nil
+	return
+}
+
 func (p Pattern) MatchString(input string) (ok bool) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		ok = s.match(1)
-		s.matches = nil
-	}
-	return
-}
-
-func (p Pattern) FindAllString(input string, count int) (found []string) {
-	if len(p) > 0 {
-		s := newPatternState(p, input)
-		for _, m := range s.findString(count) {
-			found = append(found, m[0]) // always at least one present
-		}
-		s.matches = nil
-	}
-	return
-}
-
-func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
-	if len(p) > 0 {
-		s := newPatternState(p, input)
-		if s.match(count) {
-			for _, mm := range s.matches {
-				found = append(found, []int{mm[0][0], mm[0][1]})
-			}
-		}
-		s.matches = nil
-	}
-	return
-}
-
-func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]string) {
-	if len(p) > 0 {
-		s := newPatternState(p, input)
-		found = s.findString(count)
-		s.matches = nil
-	}
-	return
-}
-
-func (p Pattern) FindAllStringSubmatchIndex(input string, count int) (found [][][2]int) {
-	if len(p) > 0 {
-		s := newPatternState(p, input)
-		if s.match(count) {
-			found = s.matches
-		}
+		ok = p.match(s, 1)
 		s.matches = nil
 	}
 	return
@@ -84,7 +101,7 @@ func (p Pattern) FindStringIndex(input string, count int) (found [2]int) {
 func (p Pattern) FindStringSubmatch(input string) (found []string) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		if mm := s.findString(1); len(mm) > 0 {
+		if mm := p.findString(s, 1); len(mm) > 0 {
 			found = mm[0]
 		}
 		s.matches = nil
@@ -95,8 +112,52 @@ func (p Pattern) FindStringSubmatch(input string) (found []string) {
 func (p Pattern) FindStringSubmatchIndex(input string, count int) (found [][2]int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		if s.match(count) && len(s.matches) > 0 {
+		if p.match(s, count) && len(s.matches) > 0 {
 			found = s.matches[0]
+		}
+		s.matches = nil
+	}
+	return
+}
+
+func (p Pattern) FindAllString(input string, count int) (found []string) {
+	if len(p) > 0 {
+		s := newPatternState(p, input)
+		for _, m := range p.findString(s, count) {
+			found = append(found, m[0]) // always at least one present
+		}
+		s.matches = nil
+	}
+	return
+}
+
+func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
+	if len(p) > 0 {
+		s := newPatternState(p, input)
+		if p.match(s, count) {
+			for _, mm := range s.matches {
+				found = append(found, []int{mm[0][0], mm[0][1]})
+			}
+		}
+		s.matches = nil
+	}
+	return
+}
+
+func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]string) {
+	if len(p) > 0 {
+		s := newPatternState(p, input)
+		found = p.findString(s, count)
+		s.matches = nil
+	}
+	return
+}
+
+func (p Pattern) FindAllStringSubmatchIndex(input string, count int) (found [][][2]int) {
+	if len(p) > 0 {
+		s := newPatternState(p, input)
+		if p.match(s, count) {
+			found = s.matches
 		}
 		s.matches = nil
 	}
@@ -106,7 +167,7 @@ func (p Pattern) FindStringSubmatchIndex(input string, count int) (found [][2]in
 func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		if s.match(-1) {
+		if p.match(s, -1) {
 			buf := spStringBuilder.Get()
 			defer spStringBuilder.Put(buf)
 			var last int
@@ -136,7 +197,7 @@ func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		if s.match(-1) {
+		if p.match(s, -1) {
 			buf := spStringBuilder.Get()
 			defer spStringBuilder.Put(buf)
 			var last int
