@@ -110,10 +110,14 @@ func (rb *RuneBuffer) Slice(index, count int) (slice []rune, size int) {
 
 // String returns the string of runes from start (inclusive) to end (exclusive)
 // if the entire range is Ready
-func (rb *RuneBuffer) String(index, count int) (slice string) {
+func (rb *RuneBuffer) String(index, count int) string {
 	if rb.Ready(index) {
-		runes, _, _ := rb.buf.ReadRuneSlice(int64(index), int64(count))
-		return string(runes)
+		c := int64(count)
+		if c < 0 {
+			c = rb.buf.Size() - int64(index+count) - 1
+		}
+		slice, _, _ := rb.buf.ReadRuneSlice(int64(index), c)
+		return string(slice)
 	}
 	return ""
 }
