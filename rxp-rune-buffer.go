@@ -57,8 +57,8 @@ func (rb *RuneBuffer) Valid(index int) (valid bool) {
 	return 0 <= index && index <= rb.len
 }
 
-// Invalid returns true if the given index position is less than zero or equal
-// greater than or equal to the total length of the RuneBuffer
+// Invalid returns true if the given index position is less than zero or greater
+// than or equal to the total length of the RuneBuffer
 func (rb *RuneBuffer) Invalid(index int) (invalid bool) {
 	return index < 0 || index >= rb.len
 }
