@@ -17,7 +17,6 @@ package rxp
 func (p Pattern) Match(input []byte) (ok bool) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		ok = s.match(1)
 		s.matches = nil
 	}
@@ -27,7 +26,6 @@ func (p Pattern) Match(input []byte) (ok bool) {
 func (p Pattern) FindIndex(input string) (found []int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		if s.match(1) {
 			mm := s.matches[0]
 			found = []int{mm[0][0], mm[0][1]}
@@ -39,6 +37,5 @@ func (p Pattern) FindIndex(input string) (found []int) {
 
 func (p Pattern) Scan(input []byte) (segments Segments) {
 	s := newPatternState(p, input)
-	defer s.recycle()
 	return p.scanner(s)
 }

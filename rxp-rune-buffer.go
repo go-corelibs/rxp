@@ -18,16 +18,6 @@ import (
 	"github.com/go-corelibs/runes"
 )
 
-//var (
-//	spRuneBuffer = sync.NewPool(1, func() *RuneBuffer {
-//		return &RuneBuffer{}
-//	}, nil, func(v *RuneBuffer) *RuneBuffer {
-//		// setter
-//		v.buf = nil
-//		return v
-//	})
-//)
-
 // RuneBuffer is an efficient rune based buffer
 type RuneBuffer struct {
 	len int
@@ -36,16 +26,10 @@ type RuneBuffer struct {
 
 // NewRuneBuffer creates a new RuneBuffer instance for the given input string
 func NewRuneBuffer[V []rune | []byte | string](input V) *RuneBuffer {
-	//rb := spRuneBuffer.Get()
 	rb := &RuneBuffer{}
 	rb.len = len(input)
 	rb.buf = runes.NewReader(input)
 	return rb
-}
-
-func (rb *RuneBuffer) recycle() {
-	// BUG: recycling a RuneBuffer causes compile time issues
-	//spRuneBuffer.Put(rb)
 }
 
 // Len returns the total number of runes in the RuneBuffer

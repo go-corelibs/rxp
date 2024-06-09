@@ -16,6 +16,5 @@ package rxp
 
 func (p Pattern) ScanRunes(input []rune) (segments Segments) {
 	s := newPatternState(p, input)
-	defer s.recycle()
 	return p.scanner(s)
 }

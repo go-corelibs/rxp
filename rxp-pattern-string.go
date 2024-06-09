@@ -17,7 +17,6 @@ package rxp
 func (p Pattern) MatchString(input string) (ok bool) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		ok = s.match(1)
 		s.matches = nil
 	}
@@ -27,7 +26,6 @@ func (p Pattern) MatchString(input string) (ok bool) {
 func (p Pattern) FindAllString(input string, count int) (found []string) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		for _, m := range s.findString(count) {
 			found = append(found, m[0]) // always at least one present
 		}
@@ -39,7 +37,6 @@ func (p Pattern) FindAllString(input string, count int) (found []string) {
 func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		if s.match(count) {
 			for _, mm := range s.matches {
 				found = append(found, []int{mm[0][0], mm[0][1]})
@@ -53,7 +50,6 @@ func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
 func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]string) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		found = s.findString(count)
 		s.matches = nil
 	}
@@ -63,7 +59,6 @@ func (p Pattern) FindAllStringSubmatch(input string, count int) (found [][]strin
 func (p Pattern) FindAllStringSubmatchIndex(input string, count int) (found [][][2]int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		if s.match(count) {
 			found = s.matches
 		}
@@ -89,7 +84,6 @@ func (p Pattern) FindStringIndex(input string, count int) (found [2]int) {
 func (p Pattern) FindStringSubmatch(input string) (found []string) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		if mm := s.findString(1); len(mm) > 0 {
 			found = mm[0]
 		}
@@ -101,7 +95,6 @@ func (p Pattern) FindStringSubmatch(input string) (found []string) {
 func (p Pattern) FindStringSubmatchIndex(input string, count int) (found [][2]int) {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		if s.match(count) && len(s.matches) > 0 {
 			found = s.matches[0]
 		}
@@ -113,7 +106,6 @@ func (p Pattern) FindStringSubmatchIndex(input string, count int) (found [][2]in
 func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		if s.match(-1) {
 			buf := spStringBuilder.Get()
 			defer spStringBuilder.Put(buf)
@@ -144,7 +136,6 @@ func (p Pattern) ReplaceAllString(input string, repl Replace) string {
 func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 	if len(p) > 0 {
 		s := newPatternState(p, input)
-		defer s.recycle()
 		if s.match(-1) {
 			buf := spStringBuilder.Get()
 			defer spStringBuilder.Put(buf)
@@ -168,6 +159,5 @@ func (p Pattern) ReplaceAllStringFunc(input string, repl Transform) string {
 
 func (p Pattern) ScanStrings(input string) (segments Segments) {
 	s := newPatternState(p, input)
-	defer s.recycle()
 	return p.scanner(s)
 }

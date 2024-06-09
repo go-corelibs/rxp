@@ -31,10 +31,6 @@ func newPatternState[V []rune | []byte | string](p Pattern, input V) *cPatternSt
 	}
 }
 
-func (s *cPatternState) recycle() {
-	s.input.recycle()
-}
-
 func (s *cPatternState) findString(count int) (matched [][]string) {
 	if s.match(count) {
 		for _, match := range s.matches {
