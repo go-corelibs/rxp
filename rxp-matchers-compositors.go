@@ -20,14 +20,12 @@ package rxp
 // Or accepts Pattern, Matcher and string types and will panic on all others
 func Or(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-		if scope.Capture() {
-			captured = true
-		}
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope
 		for _, matcher := range matchers {
-			clone := scope.Clone()
-			if cons, capt, nega, next := matcher(clone, reps, input, index, sm); next {
-				return cons, capt || captured, nega, !scope.Negated()
+			clone := scoped
+			if scoping, cons, next := matcher(clone, reps, input, index, sm); next {
+				return scoping, cons, !scoped.Negated()
 			}
 		}
 		return
@@ -40,17 +38,16 @@ func Or(options ...interface{}) Matcher {
 // Not accepts Pattern, Matcher and string types and will panic on all others
 func Not(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope
 		if input.Invalid(index) {
-			proceed = scope.Negated()
 			return
 		}
-		negated = true
 
 		// Not is an Or-like operation when there are multiple Matcher
 		// instances, first one proceeds
 		for _, matcher := range matchers {
-			if consumed, _, _, proceed = matcher(scope.Clone(), reps, input, index, sm); proceed {
+			if _, consumed, proceed = matcher(scoped, reps, input, index, sm); proceed {
 				break
 			}
 		}
@@ -73,14 +70,11 @@ func Not(options ...interface{}) Matcher {
 // accepted together as this group (sub-sub-matches are not a thing)
 func Group(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-
-		if scope.Capture() {
-			captured = true
-		}
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope
 
 		for _, matcher := range matchers {
-			if cons, _, _, next := matcher(scope, reps, input, index+consumed, sm); !next {
+			if _, cons, next := matcher(scoped, reps, input, index+consumed, sm); !next {
 				consumed = 0
 				return
 			} else {
@@ -89,7 +83,7 @@ func Group(options ...interface{}) Matcher {
 		}
 
 		// successful match of entire group
-		proceed = !scope.Negated()
+		proceed = !scoped.Negated()
 
 		return
 	}, flags...)

@@ -19,10 +19,10 @@ package rxp
 //	(?:\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
 func FieldWord(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, _ Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-		scope |= cfg
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
 		if input.Invalid(index) {
-			proceed = scope.Negated()
+			proceed = scoped.Negated()
 			return
 		}
 
@@ -64,12 +64,9 @@ func FieldWord(flags ...string) Matcher {
 				break
 			}
 
-			if scope.Capture() {
-				captured = true
-			}
 		}
 
-		if scope.Negated() {
+		if scoped.Negated() {
 			proceed = !proceed
 		}
 
@@ -82,10 +79,10 @@ func FieldWord(flags ...string) Matcher {
 //	(?:\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func FieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-		scope |= cfg
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
 		if input.Invalid(index) {
-			proceed = scope.Negated()
+			proceed = scoped.Negated()
 			return
 		}
 
@@ -94,7 +91,6 @@ func FieldKey(flags ...string) Matcher {
 		if proceed = RuneIsALPHA(this); proceed {
 			// matched first range [a-zA-Z]
 			consumed += size
-			captured = scope.Capture()
 
 			total := input.Len()
 
@@ -145,7 +141,7 @@ func FieldKey(flags ...string) Matcher {
 
 		}
 
-		if scope.Negated() {
+		if scoped.Negated() {
 			proceed = !proceed
 		}
 
@@ -159,10 +155,10 @@ func FieldKey(flags ...string) Matcher {
 //	(?:\b[-+]?[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
 func Keyword(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-		scope |= cfg
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
 		if input.Invalid(index) {
-			proceed = scope.Negated()
+			proceed = scoped.Negated()
 			return
 		}
 
@@ -185,9 +181,6 @@ func Keyword(flags ...string) Matcher {
 
 			// this matched first range [a-zA-Z]
 			consumed += size
-			if scope.Capture() {
-				captured = true
-			}
 
 			total := input.Len()
 
@@ -223,7 +216,7 @@ func Keyword(flags ...string) Matcher {
 
 		}
 
-		if scope.Negated() {
+		if scoped.Negated() {
 			proceed = !proceed
 		}
 

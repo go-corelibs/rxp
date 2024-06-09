@@ -20,13 +20,13 @@ import (
 
 // Caret creates a Matcher equivalent to the regexp caret [^]
 func Caret(flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-
-		if scope.Multiline() {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope
+		if scoped.Multiline() {
 			// start of input or start of line
 			prev, _, ok := input.Get(index - 1)
 			// if there is no previous character ~or~ the previous is a newline
-			if proceed = !ok || prev == '\n'; scope.Negated() {
+			if proceed = !ok || prev == '\n'; scoped.Negated() {
 				// check negation before return
 				proceed = !proceed
 			}
@@ -34,7 +34,7 @@ func Caret(flags ...string) Matcher {
 		}
 
 		// check only for the start of input
-		if proceed = index == 0; scope.Negated() {
+		if proceed = index == 0; scoped.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -43,12 +43,12 @@ func Caret(flags ...string) Matcher {
 
 // Dollar creates a Matcher equivalent to the regexp [$]
 func Dollar(flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-
-		if scope.Multiline() {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope
+		if scoped.Multiline() {
 			// look for: end of input or end of line
 			r, _, ok := input.Get(index)
-			if proceed = !ok || r == '\n'; scope.Negated() {
+			if proceed = !ok || r == '\n'; scoped.Negated() {
 				// check negation before return
 				proceed = !proceed
 			}
@@ -57,7 +57,7 @@ func Dollar(flags ...string) Matcher {
 		}
 
 		// matching on end of input
-		if proceed = input.End(index); scope.Negated() {
+		if proceed = input.End(index); scoped.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -67,9 +67,9 @@ func Dollar(flags ...string) Matcher {
 // A creates a Matcher equivalent to the regexp [\A]
 func A(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-		scope |= cfg
-		if proceed = index == 0; scope.Negated() {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
+		if proceed = index == 0; scoped.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -79,8 +79,8 @@ func A(flags ...string) Matcher {
 // B creates a Matcher equivalent to the regexp [\b]
 func B(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-		scope |= cfg
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
 
 		this, _, _ := input.Get(index)
 		next, _, _ := input.Get(index + 1)
@@ -113,7 +113,7 @@ func B(flags ...string) Matcher {
 
 		}
 
-		if scope.Negated() {
+		if scoped.Negated() {
 			proceed = !proceed
 		}
 
@@ -124,9 +124,9 @@ func B(flags ...string) Matcher {
 // Z is a Matcher equivalent to the regexp [\z]
 func Z(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured bool, negated bool, proceed bool) {
-		scope |= cfg
-		if proceed = input.Invalid(index); scope.Negated() {
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
+		if proceed = input.Invalid(index); scoped.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -142,13 +142,12 @@ func BackRef(gid int, flags ...string) Matcher {
 		panic("BackRef requires a positive non-zero gid argument")
 	}
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool) {
-		scope |= cfg
-		captured = scope.Capture()
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
 
 		if count := len(sm); count == 0 || gid >= count { // gid > count is correct because gid is 1-indexed
 			// id is out of range (non-zero index) or no matches present
-			proceed = scope.Negated()
+			proceed = scoped.Negated()
 			return
 		}
 
@@ -159,7 +158,7 @@ func BackRef(gid int, flags ...string) Matcher {
 
 		if proceed = input.Len() >= index+groupLen; !proceed {
 			// forward is past EOF, OOB is not negated
-			proceed = scope.Negated()
+			proceed = scoped.Negated()
 			return
 		}
 
@@ -169,13 +168,13 @@ func BackRef(gid int, flags ...string) Matcher {
 
 			r, rs, _ := input.Get(forward)
 
-			if scope.AnyCase() {
+			if scoped.AnyCase() {
 				proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(r)
 			} else {
 				proceed = runes[idx] == r
 			}
 
-			if scope.Negated() {
+			if scoped.Negated() {
 				proceed = !proceed
 			}
 

@@ -25,11 +25,10 @@ package rxp
 //
 //	| Return   | Description                        |
 //	|----------|------------------------------------|
+//	| scoped   | possibly modified sub-match scope  |
 //	| consumed | number of runes matched from index |
-//	| captured | indicate this is a capture group   |
-//	| negated  | indicate this group is negated     |
-//	| proceed  | matched success, match for more    |
-type Matcher func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool)
+//	| proceed  | success, keep matching for more    |
+type Matcher func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool)
 
 // RuneMatcher is the signature for the basic character matching functions
 // such as RuneIsWord
@@ -40,15 +39,15 @@ type RuneMatcher func(r rune) bool
 
 // WrapMatcher wraps a RuneMatcher with MakeMatcher with support for negations
 func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope
 		if input.Ready(index) {
 			r, size, _ := input.Get(index)
-			if proceed = matcher(r); scope.Negated() {
+			if proceed = matcher(r); scoped.Negated() {
 				proceed = !proceed
 			}
 			if proceed {
 				consumed += size
-				captured = scope.Capture()
 			}
 		}
 		return
@@ -60,63 +59,53 @@ func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
 // around a given RuneMatcher
 func MakeMatcher(match Matcher, flags ...string) Matcher {
 	cfgReps, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (consumed int, captured, negated, proceed bool) {
-		scope |= cfg
+	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
 		if cfgReps != nil {
 			reps = cfgReps
 		}
 
-		if scope.Capture() {
-			captured = true
-		}
-
-		inputLen := input.Len()
-		var next, capt, completed bool
+		var scoping Flags
+		var matched, completed bool
 		var keep, count, queue int
-		for this := 0; index+this <= inputLen; {
-			idx := index + this
-			if input.Valid(idx) {
-				// one past last is necessary for \z and $
+		for this := 0; input.Valid(index + this); {
+			// one past last is necessary for \z and $
 
-				keep, capt, _, next = match(scope, reps, input, idx, sm)
-				if capt {
-					captured = true
-				}
-
-				if next {
-					count += 1
-
-					if keep == 0 {
-						this += 1
-					} else if keep > 0 && idx <= inputLen {
-						// guard on progressing beyond EOF
-						this += keep
-						queue += keep
-					}
-
-					if minHit, maxHit := reps.Satisfied(count); minHit {
-						// met the min req
-						completed = true
-						if scope.Less() {
-							// don't need more than the min?
-							break
-						} else if maxHit {
-							// there is a limit and this is it
-							break
-						}
-					}
-
-					// passed less/min/max checks, see if there's any more
-					continue
-				}
-
-				if minOk, _ := reps.Satisfied(count); minOk {
-					completed = true
-				}
-
+			if scoping, keep, matched = match(scoped, reps, input, index+this, sm); scoping.Capture() {
+				scoped = scoped.SetCapture()
 			}
 
-			// did not pass match check
+			if matched {
+				count += 1
+
+				if keep == 0 {
+					this += 1
+				} else if keep > 0 {
+					this += keep
+					queue += keep
+				}
+
+				if minHit, maxHit := reps.Satisfied(count); minHit {
+					completed = true
+					// met the min req
+					if scoping.Less() {
+						// preferring less, no need to continue
+						break
+					} else if maxHit {
+						// there is a limit and this is it
+						break
+					}
+				}
+
+				// passed less/min/max checks, see if there's any more
+				continue
+			}
+
+			if minOk, _ := reps.Satisfied(count); minOk {
+				completed = true
+			}
+
+			// not a matched case
 			break
 		}
 
