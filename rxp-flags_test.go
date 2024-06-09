@@ -22,6 +22,12 @@ import (
 )
 
 func TestFlags(t *testing.T) {
+	c.Convey("Set/Unset/Has", t, func() {
+		c.So(DefaultFlags.Set(DotNewlineFlag).String(), c.ShouldEqual, "s")
+		c.So((MultilineFlag | DotNewlineFlag).Unset(DotNewlineFlag).String(), c.ShouldEqual, "m")
+		c.So((MultilineFlag | DotNewlineFlag).Has(DotNewlineFlag), c.ShouldBeTrue)
+		c.So((MultilineFlag | DotNewlineFlag).Has(CaptureFlag), c.ShouldBeFalse)
+	})
 	c.Convey("ParseFlags", t, func() {
 
 		for idx, test := range []struct {
@@ -89,8 +95,8 @@ func TestFlags(t *testing.T) {
 		f = f.SetNegated()
 		c.So(f.String(), c.ShouldEqual, `^ic`)
 
-		clone := f.Clone()
-		c.So(clone.String(), c.ShouldEqual, `^ic`)
+		clone := f
+		//c.So(clone.String(), c.ShouldEqual, `^ic`)
 
 		_, other := ParseFlags(`^ms`)
 		c.So(other.String(), c.ShouldEqual, `^ms`)
