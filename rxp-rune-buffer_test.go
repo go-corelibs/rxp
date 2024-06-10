@@ -58,6 +58,7 @@ func TestRuneBuffer(t *testing.T) {
 		c.So(slice, c.ShouldEqual, []rune(nil))
 		c.So(total, c.ShouldEqual, 0)
 		// string
+		c.So(rb.String(1, -1), c.ShouldEqual, "tuff")
 		c.So(rb.String(1, 4), c.ShouldEqual, "tuff")
 		c.So(rb.String(5, 6), c.ShouldEqual, "")
 		// prev

@@ -44,6 +44,13 @@ func TestPattern_Split(t *testing.T) {
 			}},
 
 			{
+				input:   "",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "*"),
+				output:  []string{""},
+			},
+
+			{
 				input:   "bb",
 				count:   -1,
 				pattern: Pattern{}.Text("a", "*"),
@@ -208,7 +215,7 @@ func TestPattern_FindAllIndex(t *testing.T) {
 			output  [][]int
 		}{
 
-			{input: "", pattern: nil, count: -1, output: [][]int(nil)},
+			{input: "", pattern: nil, count: -1, output: [][]int{{0, 0}}},
 			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: 1, output: [][]int{{0, 1}}},
 			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: [][]int{{0, 1}, {1, 2}}},
 		} {

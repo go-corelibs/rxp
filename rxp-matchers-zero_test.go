@@ -34,7 +34,7 @@ func TestMatchersClassZero(t *testing.T) {
 			{
 				input:   "",
 				pattern: Pattern{}.Caret(),
-				output:  [][]string(nil),
+				output:  [][]string{{""}},
 			},
 
 			{
@@ -80,7 +80,7 @@ func TestMatchersClassZero(t *testing.T) {
 			{
 				input:   "",
 				pattern: Pattern{}.Dollar(),
-				output:  [][]string(nil),
+				output:  [][]string{{""}},
 			},
 
 			{
@@ -126,7 +126,7 @@ func TestMatchersClassZero(t *testing.T) {
 			{
 				input:   "",
 				pattern: Pattern{}.A(),
-				output:  [][]string(nil),
+				output:  [][]string{{""}},
 			},
 
 			{
@@ -172,7 +172,7 @@ func TestMatchersClassZero(t *testing.T) {
 			{
 				input:   "",
 				pattern: Pattern{}.B("^"),
-				output:  [][]string(nil),
+				output:  [][]string{{""}},
 			},
 
 			{
@@ -218,7 +218,7 @@ func TestMatchersClassZero(t *testing.T) {
 			{
 				input:   "",
 				pattern: Pattern{}.Z(),
-				output:  [][]string(nil),
+				output:  [][]string{{""}},
 			},
 
 			{

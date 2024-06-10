@@ -62,7 +62,12 @@ func TestMatchersCompositors(t *testing.T) {
 				pattern: Pattern{}.Or("+",
 					A(), Z(), B(),
 				),
-				output: [][]string(nil),
+				output: [][]string{
+					{""}, // start of text
+					{""}, // after the "a"
+					{""}, // before the "b"
+					{""}, // end of text
+				},
 			},
 		} {
 			c.SoMsg(

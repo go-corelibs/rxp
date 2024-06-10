@@ -27,7 +27,7 @@ func TestMatchers(t *testing.T) {
 		c.So(
 			Pattern{}.
 				Add(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
-					scoped = scope.SetCapture()
+					scoped = scope | CaptureFlag
 					if prev, _, ok := input.Prev(index); ok {
 						if prev == 'o' {
 							if this, size, ok := input.Get(index); ok {
