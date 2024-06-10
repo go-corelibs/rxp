@@ -72,6 +72,11 @@ func A(flags ...string) Matcher {
 		if proceed = index == 0; scoped.Negated() {
 			proceed = !proceed
 		}
+
+		if proceed {
+			scoped |= MatchedFlag
+		}
+
 		return
 	}
 }
@@ -117,6 +122,10 @@ func B(flags ...string) Matcher {
 			proceed = !proceed
 		}
 
+		if proceed {
+			scoped |= MatchedFlag
+		}
+
 		return
 	}
 }
@@ -129,6 +138,11 @@ func Z(flags ...string) Matcher {
 		if proceed = input.Invalid(index); scoped.Negated() {
 			proceed = !proceed
 		}
+
+		if proceed {
+			scoped |= MatchedFlag
+		}
+
 		return
 	}
 }
@@ -187,6 +201,11 @@ func BackRef(gid int, flags ...string) Matcher {
 		}
 
 		consumed = size
+
+		if proceed {
+			scoped |= MatchedFlag
+		}
+
 		return
 	}
 }
