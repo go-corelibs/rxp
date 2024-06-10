@@ -41,7 +41,7 @@ func (r Reps) Max() int {
 	return r[1]
 }
 
-// IsNil returns true if the length of the Reps int slice is not exactly two
+// IsNil returns true if the length of the Reps int slice is not at least two
 func (r Reps) IsNil() bool {
 	return len(r) < 2
 }
