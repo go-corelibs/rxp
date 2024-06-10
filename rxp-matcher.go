@@ -72,10 +72,11 @@ func MakeMatcher(match Matcher, flags ...string) Matcher {
 			// one past last is necessary for \z and $
 
 			if scoping, keep, matched = match(scoped, reps, input, index+this, sm); scoping.Capture() {
-				scoped = scoped.SetCapture()
+				scoped |= CaptureFlag
 			}
 
 			if matched {
+				scoped |= MatchedFlag
 				count += 1
 
 				if keep == 0 {
