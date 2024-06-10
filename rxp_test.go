@@ -25,89 +25,6 @@ import (
 //go:embed testdata/random.txt
 var gTestDataRandomString string
 
-var gTestDataRandomRunes []rune
-
-func init() {
-	gTestDataRandomRunes = []rune(gTestDataRandomString)
-}
-
-func xTextNoLoop(text string, flags ...string) Matcher {
-	runes := []rune(text)
-	needLen := len(runes)
-
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
-
-		// scan ahead without consuming runes
-		// without any for looping
-		// this is marginally slower than the for-loop
-
-		if input.Ready(index) {
-
-			inputLen := input.Len()
-
-			end := index + needLen
-			if proceed = end <= inputLen; !proceed {
-				return
-			}
-
-			if maybe := input.String(index, end-index); scope.AnyCase() {
-				proceed = strings.ToLower(text) == strings.ToLower(maybe)
-			} else {
-				proceed = text == maybe
-			}
-
-			if scope.Negated() {
-				if proceed = !proceed; proceed {
-					// negations only move the needle by one
-					consumed = 1
-				}
-			} else if proceed {
-				// positives move the needle however much is needed
-				consumed = needLen
-			}
-
-			return // bypass working code for wip
-		}
-
-		return
-	}, flags...)
-}
-
-func Benchmark_Text_Nope(b *testing.B) {
-	_ = Pattern{xTextNoLoop("lorem", "i")}.FindAllString(gTestDataRandomString, -1)
-}
-
-func Benchmark_Text_Loop(b *testing.B) {
-	_ = Pattern{Text("lorem", "i")}.FindAllString(gTestDataRandomString, -1)
-}
-
-func Benchmark_ScanString_Regexp(b *testing.B) {
-	// There is no ScanString within the regexp package, this benchmark test
-	// is emulating what would be done (without using rxp).
-
-	// ScanString returns a special slice of Segment types that include both the
-	// matched and unmatched input, and indicates which is which. This cannot
-	// be done with FindAllStringSubmatch because there's no way to know where
-	// one fragment begins and another ends
-
-	// FieldWord equivalent regexp pattern:
-	pattern := `(?ms)(\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)`
-	m := regexp.MustCompile(pattern).FindAllStringIndex(gTestDataRandomString, -1)
-	var results []string
-	var last int
-	for _, mm := range m {
-		if last < mm[0] {
-			results = append(results, gTestDataRandomString[last:mm[0]])
-			last = mm[0]
-		}
-		results = append(results, gTestDataRandomString[mm[0]:mm[1]])
-	}
-}
-
-func Benchmark_ScanString_Rxp(b *testing.B) {
-	_ = Pattern{FieldWord("c")}.ScanRunes(gTestDataRandomRunes).Strings()
-}
-
 func Benchmark_FindAllString_Regexp(b *testing.B) {
 	_ = regexp.MustCompile(`(?ms)(\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)`).
 		FindAllString(gTestDataRandomString, -1)
@@ -185,4 +102,3 @@ func Benchmark_Replace_ToUpper_Rxp(b *testing.B) {
 			ReplaceAllString(gTestDataRandomString, Replace{}.ToUpper())
 	}
 }
-
