@@ -13,8 +13,3 @@
 // limitations under the License.
 
 package rxp
-
-func (p Pattern) ScanRunes(input []rune) (segments Segments) {
-	s := newPatternState(p, input)
-	return p.scanner(s)
-}
