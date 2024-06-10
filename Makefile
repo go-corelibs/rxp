@@ -19,7 +19,7 @@ STATS_FILES += ${STATS_FILE_OUTPUT}
 STATS_FILES += ${STATS_FILE_REGEXP}
 STATS_FILES += ${STATS_FILE_RXP}
 
-.PHONE += benchmark
+.PHONY += benchmark
 .PHONY += benchstats-history
 .PHONY += benchstats-regexp
 
