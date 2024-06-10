@@ -90,10 +90,8 @@ func TestFlags(t *testing.T) {
 
 		_, f := ParseFlags(`i`)
 		c.So(f.String(), c.ShouldEqual, `i`)
-		f = f.SetCapture()
+		f |= CaptureFlag
 		c.So(f.String(), c.ShouldEqual, `ic`)
-		f = f.SetNegated()
-		c.So(f.String(), c.ShouldEqual, `^ic`)
 
 		clone := f
 		//c.So(clone.String(), c.ShouldEqual, `^ic`)

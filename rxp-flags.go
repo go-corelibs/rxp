@@ -25,10 +25,11 @@ type Flags uint16
 const (
 	DefaultFlags Flags = 0
 	NegatedFlag  Flags = 1 << iota
+	CaptureFlag
+	MatchedFlag
 	MultilineFlag
 	DotNewlineFlag
 	AnyCaseFlag
-	CaptureFlag
 	ZeroOrMoreFlag
 	ZeroOrOneFlag
 	OneOrMoreFlag
@@ -140,6 +141,14 @@ func (f Flags) Negated() bool {
 	return f&NegatedFlag == NegatedFlag
 }
 
+func (f Flags) Capture() bool {
+	return f&CaptureFlag == CaptureFlag
+}
+
+func (f Flags) Matched() bool {
+	return f&MatchedFlag == MatchedFlag
+}
+
 func (f Flags) Multiline() bool {
 	return f&MultilineFlag == MultilineFlag
 }
@@ -150,10 +159,6 @@ func (f Flags) DotNL() bool {
 
 func (f Flags) AnyCase() bool {
 	return f&AnyCaseFlag == AnyCaseFlag
-}
-
-func (f Flags) Capture() bool {
-	return f&CaptureFlag == CaptureFlag
 }
 
 func (f Flags) Less() bool {
@@ -170,14 +175,6 @@ func (f Flags) ZeroOrOne() bool {
 
 func (f Flags) OneOrMore() bool {
 	return f&OneOrMoreFlag == OneOrMoreFlag
-}
-
-func (f Flags) SetNegated() Flags {
-	return f | NegatedFlag
-}
-
-func (f Flags) SetCapture() Flags {
-	return f | CaptureFlag
 }
 
 func (f Flags) Merge(other Flags) Flags {
