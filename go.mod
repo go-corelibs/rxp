@@ -3,6 +3,7 @@ module github.com/go-corelibs/rxp
 go 1.22.3
 
 require (
+	github.com/go-corelibs/runes v1.0.1
 	github.com/go-corelibs/values v1.2.0
 	github.com/go-corelibs/x-sync v0.1.0
 	github.com/smartystreets/goconvey v1.8.1

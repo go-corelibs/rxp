@@ -1,5 +1,7 @@
 github.com/go-corelibs/maths v1.2.0 h1:sQKBsZAhmSTq43XHZo7IyUlCJekgFhJHz/jc6355GqU=
 github.com/go-corelibs/maths v1.2.0/go.mod h1:AGg83e+nOjEqCvfrwDMGTu/DvSrs0bWLZ1IZc/fN5RM=
+github.com/go-corelibs/runes v1.0.1 h1:3yne+tWbOwoewpMVPABkSbw8aUxk0ghnZRRqtDMeBOg=
+github.com/go-corelibs/runes v1.0.1/go.mod h1:5CF2npN0Wmr2krESb5WZ6Sf0vk7QAVfIHkbFls4vkdA=
 github.com/go-corelibs/values v1.2.0 h1:W+iktCWF3Ysdx12ir8Xve/oF00T4+5gwdWs0F3VC1vc=
 github.com/go-corelibs/values v1.2.0/go.mod h1:zhlreI/N+FYNyTMXofbdWUIM5Pjj12oeYXOecFAozgs=
 github.com/go-corelibs/x-sync v0.1.0 h1:ABBFNAqqn5U1fLnJPjjMl6GXis2VRY6BaeVUPjbdQYw=
