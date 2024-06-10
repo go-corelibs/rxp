@@ -33,7 +33,9 @@ package rxp
 //	| count == 0 | the result is nil (zero substrings)                               |
 //	| count < 0  | all substrings                                                    |
 func (p Pattern) Split(input string, count int) (found []string) {
-	if count == 0 || input == "" || len(p) == 0 {
+	if len(p) > 0 && input == "" {
+		return []string{""}
+	} else if count == 0 || len(p) == 0 {
 		return // zero substrings
 	}
 
@@ -41,33 +43,22 @@ func (p Pattern) Split(input string, count int) (found []string) {
 	// get the complete match set first
 	if p.match(s, -1) {
 
-		var countPresent, remainder bool
-		var lastMatchEnd int
-		for idx, groups := range s.matches {
-
-			if countPresent = count == idx+1; countPresent {
-				// at most count substrings; the last will be the un-split remainder
-				found = pushString(found, s.input.String(lastMatchEnd, -1))
+		beg := 0
+		end := 0
+		for _, match := range s.matches {
+			if count > 0 && len(found) >= count-1 {
 				break
 			}
 
-			if idx == 0 {
-				if groups[0][1]-groups[0][0] == 0 {
-					continue // skip first index zero-width
-				}
-				found = pushString(found, s.input.String(0, groups[0][0]))
-			} else if lastMatchEnd < groups[0][0] {
-				// unmatched text
-				found = pushString(found, s.input.String(lastMatchEnd, groups[0][0]-lastMatchEnd))
-			} else if idx == len(s.matches)-1 {
-				remainder = true
+			end = match[0][0]
+			if match[0][1] != 0 {
+				found = append(found, input[beg:end])
 			}
-
-			lastMatchEnd = groups[0][1] // update progress
+			beg = match[0][1]
 		}
 
-		if !countPresent && remainder {
-			found = pushString(found, s.input.String(lastMatchEnd, -1))
+		if end != len(input) {
+			found = append(found, input[beg:])
 		}
 
 	}
@@ -132,15 +123,16 @@ func (p Pattern) FindAllString(input string, count int) (found []string) {
 }
 
 func (p Pattern) FindAllStringIndex(input string, count int) (found [][]int) {
-	if len(p) > 0 {
-		s := newPatternState(p, input)
-		if p.match(s, count) {
-			for _, mm := range s.matches {
-				found = append(found, []int{mm[0][0], mm[0][1]})
-			}
-		}
-		s.matches = nil
+	if len(p) == 0 {
+		return [][]int{{0, 0}}
 	}
+	s := newPatternState(p, input)
+	if p.match(s, count) && len(s.matches) > 0 {
+		for _, groups := range s.matches {
+			found = append(found, []int{groups[0][0], groups[0][1]})
+		}
+	}
+	s.matches = nil
 	return
 }
 
