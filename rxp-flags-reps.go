@@ -49,7 +49,7 @@ func (r Reps) IsNil() bool {
 // Valid returns true if the Reps is not nil and if the minimum is not greater
 // than the maximum, unless the maximum is unlimited (zero or a negative)
 func (r Reps) Valid() bool {
-	if r.IsNil() {
+	if len(r) < 2 {
 		return false
 	}
 	minimum, maximum := r.Min(), r.Max()
@@ -61,7 +61,7 @@ func (r Reps) Valid() bool {
 
 // Satisfied returns true if the given count meets the required repetitions
 func (r Reps) Satisfied(count int) (minHit, maxHit bool) {
-	if r.IsNil() {
+	if len(r) < 2 {
 		return
 	}
 

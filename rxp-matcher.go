@@ -41,7 +41,7 @@ type RuneMatcher func(r rune) bool
 func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
 	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope
-		if input.Ready(index) {
+		if 0 <= index && index < input.len {
 			r, size, _ := input.Get(index)
 			if proceed = matcher(r); scoped.Negated() {
 				proceed = !proceed
@@ -68,7 +68,7 @@ func MakeMatcher(match Matcher, flags ...string) Matcher {
 		var scoping Flags
 		var matched, completed bool
 		var keep, count, queue int
-		for this := 0; input.Valid(index + this); {
+		for this := 0; 0 <= index+this && index+this <= input.len; {
 			// one past last is necessary for \z and $
 
 			if scoping, keep, matched = match(scoped, reps, input, index+this, sm); scoping.Capture() {

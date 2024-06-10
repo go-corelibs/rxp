@@ -39,7 +39,7 @@ func (rb *RuneBuffer) Len() int {
 
 // Get returns the Ready rune at the given index position
 func (rb *RuneBuffer) Get(index int) (r rune, size int, ok bool) {
-	if ok = rb.Ready(index); ok {
+	if ok = 0 <= index && index < rb.len; ok {
 		r, size, _ = rb.buf.ReadRuneAt(int64(index))
 	}
 	return
@@ -114,7 +114,7 @@ func (rb *RuneBuffer) String(index, count int) string {
 	if rb.Ready(index) {
 		c := int64(count)
 		if c < 0 {
-			c = rb.buf.Size() - int64(index+count) - 1
+			c = int64(rb.len) - int64(index+count) - 1
 		}
 		slice, _, _ := rb.buf.ReadRuneSlice(int64(index), c)
 		return string(slice)

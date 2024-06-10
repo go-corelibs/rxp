@@ -21,7 +21,7 @@ func FieldWord(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope | cfg
-		if input.Invalid(index) {
+		if 0 > index || index >= input.len {
 			proceed = scoped.Negated()
 			return
 		}
@@ -81,7 +81,7 @@ func FieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope | cfg
-		if input.Invalid(index) {
+		if 0 > index || index >= input.len {
 			proceed = scoped.Negated()
 			return
 		}
@@ -157,7 +157,7 @@ func Keyword(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope | cfg
-		if input.Invalid(index) {
+		if 0 > index || index >= input.len {
 			proceed = scoped.Negated()
 			return
 		}

@@ -57,7 +57,7 @@ func Dollar(flags ...string) Matcher {
 		}
 
 		// matching on end of input
-		if proceed = input.End(index); scoped.Negated() {
+		if proceed = index == input.len; scoped.Negated() {
 			proceed = !proceed
 		}
 		return
@@ -135,7 +135,7 @@ func Z(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope | cfg
-		if proceed = input.Invalid(index); scoped.Negated() {
+		if proceed = 0 > index || index >= input.len; scoped.Negated() {
 			proceed = !proceed
 		}
 

@@ -31,7 +31,7 @@ func Text(text string, flags ...string) Matcher {
 		// number of times unicode.ToLower is called compared to
 		// strings.ToLower which has to scan the entire string each time
 
-		if !input.Ready(index) {
+		if 0 > index || index >= input.len {
 			proceed = scoped.Negated()
 			return
 		}
@@ -39,7 +39,7 @@ func Text(text string, flags ...string) Matcher {
 		var size int
 		for idx := 0; idx < len(runes); idx++ {
 			forward := index + idx // forward position
-			if proceed = input.Ready(forward); !proceed {
+			if proceed = 0 <= forward && forward < input.len; !proceed {
 				// forward is past EOF, OOB is not negated
 				return
 			}

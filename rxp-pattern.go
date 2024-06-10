@@ -48,7 +48,7 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 	lastMatchedIdx := -1
 
 	// while there is input to process
-	for s.input.Valid(s.index) {
+	for 0 <= s.index && s.index <= s.input.len {
 
 		start := s.index
 		var consumed int
@@ -66,7 +66,7 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 					s.index += keep
 				} else if scoping.ZeroOrMore() {
 					// if the previous index and this index are the same
-					if lastMatcherIdx != idx || lastMatchedIdx != s.index || s.input.End(s.index) {
+					if lastMatcherIdx != idx || lastMatchedIdx != s.index || s.index == s.input.len {
 						atLeastZero += 1
 					}
 				} else if scoping.Matched() {
@@ -90,7 +90,7 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 				set[0][0], set[0][1] = start, s.index
 				s.matches = pushMatch(s.matches, set)
 				set = [][2]int{{}}
-			} else if atLeastZero > 0 && s.input.Valid(s.index) {
+			} else if atLeastZero > 0 && 0 <= s.index && s.index <= s.input.len {
 				set[0][0], set[0][1] = start, start
 				s.matches = pushMatch(s.matches, set)
 				set = [][2]int{{}}
@@ -100,7 +100,7 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 					// early out, count is the requested total number of subMatches
 					return true
 				}
-			} else if s.input.Invalid(s.index) {
+			} else if 0 > s.index || s.index >= s.input.len {
 				return len(s.matches) > 0
 			}
 		}
