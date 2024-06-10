@@ -69,6 +69,8 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 					if lastMatcherIdx != idx || lastMatchedIdx != s.index || s.input.End(s.index) {
 						atLeastZero += 1
 					}
+				} else if scoping.Matched() {
+					atLeastZero += 1
 				}
 				totalCompleted += 1
 				lastMatcherIdx = idx
@@ -88,14 +90,18 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 				set[0][0], set[0][1] = start, s.index
 				s.matches = pushMatch(s.matches, set)
 				set = [][2]int{{}}
-			} else if atLeastZero > 0 {
+			} else if atLeastZero > 0 && s.input.Valid(s.index) {
 				set[0][0], set[0][1] = start, start
 				s.matches = pushMatch(s.matches, set)
 				set = [][2]int{{}}
 			}
-			if count > 0 && count >= totalCompleted {
-				// early out, count is the requested total number of subMatches
-				return true
+			if count > 0 {
+				if count >= totalCompleted {
+					// early out, count is the requested total number of subMatches
+					return true
+				}
+			} else if s.input.Invalid(s.index) {
+				return len(s.matches) > 0
 			}
 		}
 
