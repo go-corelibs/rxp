@@ -69,6 +69,12 @@ func FieldWord(flags ...string) Matcher {
 		if scoped.Negated() {
 			proceed = !proceed
 		}
+		if proceed {
+			scoped |= MatchedFlag
+			if consumed == 0 {
+				consumed += 1
+			}
+		}
 
 		return
 	}
