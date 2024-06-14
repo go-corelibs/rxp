@@ -14,10 +14,7 @@
 
 package rxp
 
-// Pipeline is a list of stages for transforming text in a single procedure
-//
-// Pipeline is also a pseudo-buildable thing using the Transform, Replace,
-// ReplaceText and ReplaceWith methods which return the updated Pipeline
+// Pipeline is a list of stages for transforming strings in a single procedure
 type Pipeline []Stage
 
 // Process returns the output of a complete Pipeline transformation of the
@@ -31,23 +28,36 @@ func (p Pipeline) Process(input string) (output string) {
 	return
 }
 
-func (p Pipeline) Transform(transform Transform) Pipeline {
+// Transform appends a Transform[string] function to the Pipeline
+func (p Pipeline) Transform(transform Transform[string]) Pipeline {
 	return append(p, Stage{Transform: transform})
 }
 
-func (p Pipeline) Replace(search interface{}, replace Replace) Pipeline {
+// Replace appends a search Pattern and Replace[string] operation to the
+// Pipeline
+//
+// The search argument can be a single Matcher function or a single Pattern
+func (p Pipeline) Replace(search interface{}, replace Replace[string]) Pipeline {
 	pattern, _, _ := ParseOptions(search)
 	return append(p, Stage{Search: pattern, Replace: replace})
 }
 
-func (p Pipeline) ReplaceText(search interface{}, text string) Pipeline {
+// Literal appends a search Pattern and literal string replace operation to the
+// Pipeline
+//
+// The search argument can be a single Matcher function or a single Pattern
+func (p Pipeline) Literal(search interface{}, text string) Pipeline {
 	pattern, _, _ := ParseOptions(search)
 	return append(p, Stage{Search: pattern, Transform: func(input string) (output string) {
 		return text
 	}})
 }
 
-func (p Pipeline) ReplaceWith(search interface{}, transform Transform) Pipeline {
+// Substitute appends a search Pattern and Transform[string] operation to the
+// Pipeline
+//
+// The search argument can be a single Matcher function or a single Pattern
+func (p Pipeline) Substitute(search interface{}, transform Transform[string]) Pipeline {
 	pattern, _, _ := ParseOptions(search)
 	return append(p, Stage{Search: pattern, Transform: transform})
 }

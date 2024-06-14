@@ -30,16 +30,8 @@ func TestPipeline(t *testing.T) {
 				Replace(nil, nil).
 				Replace(
 					Pattern{}.Dot("+sc"),
-					Replace{}.WithReplace(func(s Segment) string {
-						var buf strings.Builder
-						buf.WriteString(s.String())
-						buf.WriteString(s.String())
-						if value, ok := s.Submatch(0); ok {
-							buf.WriteString(value)
-						} else if value, ok = s.Submatch(1); ok {
-							buf.WriteString(value)
-						}
-						return buf.String()
+					Replace[string]{}.WithReplace(func(input *InputReader, captured [][2]int, text string) (replaced string) {
+						return text + text + text
 					})).
 				Process(`ONE TWO`),
 			c.ShouldEqual,
@@ -48,8 +40,8 @@ func TestPipeline(t *testing.T) {
 
 		c.So(
 			Pipeline{}.
-				Replace(Pattern{}.Dot(), Replace{}.ToLower()).
-				Replace(Pattern{}.Text("two"), Replace{func(s Segment) (replaced string) {
+				Replace(Pattern{}.Dot("+"), Replace[string]{}.ToLower()).
+				Replace(Pattern{}.Text("two"), Replace[string]{func(input *InputReader, captured [][2]int, text string) (replaced string) {
 					return "2"
 				}}).
 				Process(`ONE TWO MANY MORE`),
@@ -59,8 +51,8 @@ func TestPipeline(t *testing.T) {
 
 		c.So(
 			Pipeline{}.
-				Replace(Pattern{}.Dot("*"), Replace{}.ToUpper()).
-				Replace(Pattern{}.Text("two", "i"), Replace{func(s Segment) (replaced string) {
+				Replace(Pattern{}.Dot("*"), Replace[string]{}.ToUpper()).
+				Replace(Pattern{}.Text("two", "i"), Replace[string]{func(input *InputReader, captured [][2]int, text string) (replaced string) {
 					return "2"
 				}}).
 				Process(`one two many more`),
@@ -71,7 +63,7 @@ func TestPipeline(t *testing.T) {
 		c.So(
 			Pipeline{}.
 				Transform(strings.ToUpper).
-				Replace(Pattern{}.Text("two", "i"), Replace{func(s Segment) (replaced string) {
+				Replace(Pattern{}.Text("two", "i"), Replace[string]{func(input *InputReader, captured [][2]int, text string) (replaced string) {
 					return "2"
 				}}).
 				Process(`one two many more`),
@@ -81,8 +73,8 @@ func TestPipeline(t *testing.T) {
 
 		c.So(
 			Pipeline{}.
-				ReplaceWith(Pattern{}.Text("ONE", "i"), strings.ToUpper).
-				Replace(Pattern{}.Text("two", "i"), Replace{func(s Segment) (replaced string) {
+				Substitute(Pattern{}.Text("ONE", "i"), strings.ToUpper).
+				Replace(Pattern{}.Text("two", "i"), Replace[string]{func(input *InputReader, captured [][2]int, text string) (replaced string) {
 					return "2"
 				}}).
 				Process(`one two many more`),
@@ -92,8 +84,8 @@ func TestPipeline(t *testing.T) {
 
 		c.So(
 			Pipeline{}.
-				ReplaceWith(Pattern{}.Text("ONE", "i"), strings.ToUpper).
-				Replace(Pattern{}.Text("two", "i"), Replace{}.WithText("2")).
+				Substitute(Pattern{}.Text("ONE", "i"), strings.ToUpper).
+				Replace(Pattern{}.Text("two", "i"), Replace[string]{}.WithLiteral("2")).
 				Process(`one two many more`),
 			c.ShouldEqual,
 			`ONE 2 many more`,
@@ -101,8 +93,8 @@ func TestPipeline(t *testing.T) {
 
 		c.So(
 			Pipeline{}.
-				ReplaceWith(Pattern{}.Text("ONE", "i"), strings.ToUpper).
-				ReplaceText(Pattern{}.Text("two", "i"), "2").
+				Substitute(Pattern{}.Text("ONE", "i"), strings.ToUpper).
+				Literal(Pattern{}.Text("two", "i"), "2").
 				Process(`one two many more`),
 			c.ShouldEqual,
 			`ONE 2 many more`,
@@ -116,50 +108,27 @@ func TestPipeline(t *testing.T) {
 
 		c.So(Pipeline{}.
 			Transform(strings.ToLower).
-			ReplaceText(S("+"), " ").
-			ReplaceText(Text("'"), "_").
-			ReplaceText(Not(W(), S(), "+"), "").
+			Literal(S("+"), " ").
+			Literal(Text("'"), "_").
+			Literal(Not(W(), S(), "+"), "").
+			//Literal(Or(W(), S(), "+", "^"), ""). // this is equivalent
 			Process(`Isn't  this  neat?`),
 			c.ShouldEqual, `isn_t this neat`)
 
 		c.So(Pipeline{
 			{Transform: strings.TrimSpace},
-			//{ // this works too, though the Or introduces overhead
-			//	Search:  Pattern{Or(S("+"), Not(Alnum("+")))},
-			//	Replace: Replace{}.WithText("_"),
-			//},
-			//// these two work best it seems
-			//{Search: Pattern{S("+", "c")}, Replace: Replace{}.WithText("_")},
-			//{Search: Pattern{Not(Alnum("+"))}, Replace: Replace{}.WithText("_")},
-			{Search: Pattern{S("+")}, Replace: Replace{}.WithText("_")},
-			{Search: Pattern{Alnum("^")}, Replace: Replace{}.WithText("_")},
-			//// caret is not what it seems?
-			//{Search: Pattern{Alnum("+", "^")}, Replace: Replace{}.WithText("_")},
-			//{ // so fast
-			//	Transform: func(input string) string {
-			//		var buf strings.Builder
-			//		var spaces bool
-			//		for _, r := range input {
-			//			if r == ' ' {
-			//				spaces = true
-			//				continue
-			//			} else if spaces {
-			//				buf.WriteRune('_')
-			//				spaces = false
-			//			}
-			//			if ('a' <= r && r <= 'z') ||
-			//				('A' <= r && r <= 'Z') ||
-			//				('0' <= r && r <= '9') {
-			//				buf.WriteRune(r)
-			//				continue
-			//			} else {
-			//				// not a space, nor alnum
-			//				buf.WriteRune('_')
-			//			}
-			//		}
-			//		return buf.String()
-			//	},
-			//},
+			{Search: Pattern{S("+")}, Replace: Replace[string]{}.WithLiteral("_")},
+			{Search: Pattern{Alnum("^")}, Replace: Replace[string]{}.WithLiteral("_")},
+			{Transform: strings.ToLower},
+		}.Process(`Isn't this neat?`),
+			c.ShouldEqual, `isn_t_this_neat_`)
+
+		c.So(Pipeline{
+			{Transform: strings.TrimSpace},
+			{Search: Pattern{S("+")}, Replace: Replace[string]{}.WithTransform(func(input string) (output string) {
+				return "_"
+			})},
+			{Search: Pattern{Alnum("^")}, Replace: Replace[string]{}.WithLiteral("_")},
 			{Transform: strings.ToLower},
 		}.Process(`Isn't this neat?`),
 			c.ShouldEqual, `isn_t_this_neat_`)

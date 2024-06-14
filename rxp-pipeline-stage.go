@@ -21,17 +21,17 @@ type Stage struct {
 	// Search is a Pattern of text, used with Replace to modify the matching
 	// text
 	Search    Pattern
-	Replace   Replace
-	Transform Transform
+	Replace   Replace[string]
+	Transform Transform[string]
 }
 
 // Process is the Pipeline processor method for a Stage
 //
-// If there is a Search Pattern present, and there is at least one Replacement
+// If there is a Search Pattern present, and there is at least one Replacer
 // functions present, then the process returns a Search
 // Pattern.ReplaceAllString
 //
-// If there is a Search Pattern present, and there are no Replacement functions
+// If there is a Search Pattern present, and there are no Replacer functions
 // present, then the process returns a Search Pattern.ReplaceAllStringFunc
 func (s Stage) Process(input string) (output string) {
 	if s.Transform != nil {
