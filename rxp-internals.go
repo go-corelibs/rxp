@@ -26,16 +26,18 @@ var spStringBuilder = sync.NewStringBuilderPool(1)
 var spBytesBuffer = sync.NewPool[*bytes.Buffer](1, func() *bytes.Buffer {
 	return new(bytes.Buffer)
 }, func(v *bytes.Buffer) *bytes.Buffer {
-	// getter
 	v.Reset()
 	return v
-}, func(v *bytes.Buffer) *bytes.Buffer {
-	// setter
+}, _spBytesBufferSetter)
+
+// _spBytesBufferSetter as a formal func (as opposed to an inline func argument
+// like the spBytesBuffer getter) - allows easier unit testing
+func _spBytesBufferSetter(v *bytes.Buffer) *bytes.Buffer {
 	if v.Len() < 64000 {
 		return v
 	}
 	return nil
-})
+}
 
 func pushByte(slice [][]byte, data []byte) [][]byte {
 	have := len(slice)
