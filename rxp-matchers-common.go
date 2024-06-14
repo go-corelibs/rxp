@@ -237,3 +237,103 @@ func IsKeyword(flags ...string) Matcher {
 		return
 	}
 }
+
+// IsHash10 creates a Matcher equivalent to:
+//
+//	(?:[a-fA-F0-9]{10})
+func IsHash10(flags ...string) Matcher {
+	_, cfg := ParseFlags(flags...)
+	return func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
+
+		// exactly 10 characters required
+		if 0 > index || index >= input.len || input.len-index < 10 {
+			proceed = scoped.Negated()
+			return
+		}
+
+		for idx := 0; idx < 10; idx++ {
+			r, _, _ := input.Get(index + consumed + idx)
+			if !RuneIsXDIGIT(r) {
+				proceed = scoped.Negated()
+				return
+			}
+		}
+
+		if proceed = !scoped.Negated(); proceed {
+			consumed = 10
+		}
+
+		return
+	}
+}
+
+// IsAtLeastSixDigits creates a Matcher equivalent to:
+//
+//	(?:\A[0-9]{6,}\z)
+func IsAtLeastSixDigits(flags ...string) Matcher {
+	_, cfg := ParseFlags(flags...)
+	return func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope | cfg
+
+		// exactly 10 characters required
+		if 0 > index || index >= input.len || input.len-index < 6 {
+			proceed = scoped.Negated()
+			return
+		}
+
+		for idx := 0; idx < 6; idx++ {
+			r, _, _ := input.Get(index + consumed + idx)
+			if !RuneIsDIGIT(r) {
+				proceed = scoped.Negated()
+				return
+			}
+		}
+
+		if proceed = !scoped.Negated(); proceed {
+			consumed = 6
+		}
+
+		return
+	}
+}
+
+// IsUUID creates a Matcher equivalent to:
+//
+//	(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})
+func IsUUID(flags ...string) Matcher {
+	return MakeMatcher(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+		scoped = scope
+
+		// exactly 36 (8+4+4+4+12+4) characters long required
+		if 0 > index || index >= input.len || input.len-index < 36 {
+			proceed = scoped.Negated()
+			return
+		}
+
+		for i, need := range []int{8, 4, 4, 4, 12} {
+			for idx := 0; idx < need; idx++ {
+				r, _, _ := input.Get(index + consumed + idx)
+				if !RuneIsXDIGIT(r) {
+					proceed = scoped.Negated()
+					return
+				}
+			}
+			if i < 4 {
+				// need dash too
+				r, _, _ := input.Get(index + consumed + need)
+				if r != '-' {
+					proceed = scoped.Negated()
+					return
+				}
+				consumed += need + 1
+			}
+		}
+
+		if proceed = !scoped.Negated(); proceed {
+			consumed = 36
+		}
+
+		return
+	}, flags...)
+}
