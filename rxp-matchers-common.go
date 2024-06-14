@@ -154,13 +154,13 @@ func IsFieldKey(flags ...string) Matcher {
 	}
 }
 
-// Keyword is intended for Go-Enjin parsing of simple search keywords from
+// IsKeyword is intended for Go-Enjin parsing of simple search keywords from
 // user input and creates a Matcher equivalent to:
 //
-//	(?:\b[-+]?[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
-func Keyword(flags ...string) Matcher {
+//	(?:\b[-+]?[a-zA-Z][-_a-zA-Z0-9']+?[a-zA-Z0-9]\b)
+func IsKeyword(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope | cfg
 		if 0 > index || index >= input.len {
 			proceed = scoped.Negated()
@@ -169,8 +169,25 @@ func Keyword(flags ...string) Matcher {
 
 		this, size, _ := input.Get(index)
 
+		var scanForward func(start int) (size int, ok bool)
+		scanForward = func(start int) (size int, ok bool) {
+			if nxt, sz, present := input.Get(start); present {
+				// found the next rune
+				if RuneIsALNUM(nxt) {
+					// accept this rune
+					return sz, true
+				} else if nxt == '-' || nxt == '_' || nxt == '\'' {
+					if size, ok = scanForward(start + sz); ok {
+						size += sz
+						return size, true
+					}
+				}
+			}
+			return 0, false
+		}
+
 		var plusOrMinus rune
-		if RuneIsPlusMinus(this) {
+		if this == '+' || this == '-' {
 			plusOrMinus = this // is one byte, size overwritten by next
 			if this, size, proceed = input.Get(index + 1); !proceed {
 				return
@@ -197,20 +214,12 @@ func Keyword(flags ...string) Matcher {
 						consumed += rs
 						idx += rs
 						continue
-					}
-
-					if RuneIsDashUnder(r) {
-						if next, _, ok := input.Get(idx + rs); ok {
-							// found the next rune
-							if RuneIsALNUM(next) {
-								// accept this rune
-								consumed += rs
-								idx += rs
-								continue
-							}
+					} else if r == '-' || r == '_' || r == '\'' {
+						if sz, ok := scanForward(idx + rs); ok {
+							consumed += rs + sz
+							idx += rs + sz
+							continue
 						}
-						// end of input reached, or next is not alnum
-						// do not consume this - or _ rune
 					}
 
 				}
