@@ -37,81 +37,126 @@ var spBytesBuffer = sync.NewPool[*bytes.Buffer](1, func() *bytes.Buffer {
 	return nil
 })
 
-func pushString(slice []string, data string) []string {
-	m := len(slice)
-	n := m + 1
-	if n > cap(slice) {
-		grown := make([]string, ((m+1)*2)+n) // double the existing space
+func pushByte(slice [][]byte, data []byte) [][]byte {
+	have := len(slice)
+	size := len(data)
+	need := have + size
+	if need > cap(slice) {
+		grown := make([][]byte, have+need) // double the existing space
+		copy(grown, slice)                 // transfer to new slice
+		slice = grown                      // grown becomes slice
+	}
+	slice = slice[0:need]                  // truncate in case too many present
+	copy(slice[have:need], [][]byte{data}) // populate with data
+	return slice
+}
+
+func pushBytes(slice [][][]byte, data ...[][]byte) [][][]byte {
+	have := len(slice)
+	size := len(data)
+	need := have + size
+	if need > cap(slice) {
+		grown := make([][][]byte, have+need) // double the existing space
 		copy(grown, slice)                   // transfer to new slice
 		slice = grown                        // grown becomes slice
 	}
-	slice = slice[0:n] // truncate in case too many present
-	slice[n-1] = data  // populate with data
+	slice = slice[0:need]        // truncate in case too many present
+	copy(slice[have:need], data) // populate with data
+	return slice
+}
+
+func pushString(slice []string, data string) []string {
+	have := len(slice)
+	need := have + 1
+	if need > cap(slice) {
+		grown := make([]string, have+need) // double the existing space
+		copy(grown, slice)                 // transfer to new slice
+		slice = grown                      // grown becomes slice
+	}
+	slice = slice[0:need] // truncate in case too many present
+	slice[need-1] = data  // populate with data
 	return slice
 }
 
 func pushStrings(slice [][]string, data ...[]string) [][]string {
-	m := len(slice)
-	n := m + len(data)
-	if n > cap(slice) {
-		grown := make([][]string, ((m+1)*2)+n) // double the existing space
-		copy(grown, slice)                     // transfer to new slice
-		slice = grown                          // grown becomes slice
+	have := len(slice)
+	size := len(data)
+	need := have + size
+	if need > cap(slice) {
+		grown := make([][]string, have+need) // double the existing space
+		copy(grown, slice)                   // transfer to new slice
+		slice = grown                        // grown becomes slice
 	}
-	slice = slice[0:n]     // truncate in case too many present
-	copy(slice[m:n], data) // populate with data
+	slice = slice[0:need]        // truncate in case too many present
+	copy(slice[have:need], data) // populate with data
 	return slice
 }
 
-func pushRunes(slice []rune, data ...rune) []rune {
-	m := len(slice)
-	n := m + len(data)
-	if n > cap(slice) {
-		grown := make([]rune, ((m+1)*2)+n) // double the existing space
+func pushRune(slice []rune, data []rune) []rune {
+	have := len(slice)
+	size := len(data)
+	need := have + size
+	if need > cap(slice) {
+		grown := make([]rune, have+need) // double the existing space
+		copy(grown, slice)               // transfer to new slice
+		slice = grown                    // grown becomes slice
+	}
+	slice = slice[0:need]        // truncate in case too many present
+	copy(slice[have:need], data) // populate with data
+	return slice
+}
+
+func pushRunes(slice [][]rune, data ...[]rune) [][]rune {
+	have := len(slice)
+	size := len(data)
+	need := have + size
+	if need > cap(slice) {
+		grown := make([][]rune, have+need) // double the existing space
 		copy(grown, slice)                 // transfer to new slice
 		slice = grown                      // grown becomes slice
 	}
-	slice = slice[0:n]     // truncate in case too many present
-	copy(slice[m:n], data) // populate with data
+	slice = slice[0:need]        // truncate in case too many present
+	copy(slice[have:need], data) // populate with data
+	return slice
+}
+
+func pushRuneSlices(slice [][][]rune, data ...[][]rune) [][][]rune {
+	have := len(slice)
+	size := len(data)
+	need := have + size
+	if need > cap(slice) {
+		grown := make([][][]rune, have+need) // double the existing space
+		copy(grown, slice)                   // transfer to new slice
+		slice = grown                        // grown becomes slice
+	}
+	slice = slice[0:need]        // truncate in case too many present
+	copy(slice[have:need], data) // populate with data
 	return slice
 }
 
 func pushMatch(slice [][][2]int, data [][2]int) [][][2]int {
-	m := len(slice)
-	n := m + 1
-	if n > cap(slice) {
-		grown := make([][][2]int, ((m+1)*2)+n) // double the existing space
-		copy(grown, slice)                     // transfer to new slice
-		slice = grown                          // grown becomes slice
-	}
-	slice = slice[0:n] // truncate in case too many present
-	slice[n-1] = data
-	return slice
-}
-
-func pushSMSlice(slice [][2]int, start, end int) [][2]int {
-	m := len(slice)
-	n := m + 1
-	if n > cap(slice) {
-		grown := make([][2]int, ((m+1)*2)+n) // double the existing space
+	have := len(slice)
+	need := have + 1
+	if need > cap(slice) {
+		grown := make([][][2]int, have+need) // double the existing space
 		copy(grown, slice)                   // transfer to new slice
 		slice = grown                        // grown becomes slice
 	}
-	slice = slice[0:n]              // truncate in case too many present
-	slice[n-1] = [2]int{start, end} // populate with data
+	slice = slice[0:need] // truncate in case too many present
+	slice[need-1] = data
 	return slice
 }
 
-func pushSegments(slice Segments, data ...Segment) Segments {
-	m := len(slice)
-	n := m + len(data)
-	if n > cap(slice) {
-		grown := make(Segments, ((m+1)*2)+n) // double the existing space
-		copy(grown, slice)                   // transfer to new slice
-		slice = grown                        // grown becomes slice
+func pushSubMatch(slice [][2]int, sm [2]int) [][2]int {
+	have := len(slice)
+	need := have + 1
+	if need > cap(slice) {
+		grown := make([][2]int, have+need) // double the existing space
+		copy(grown, slice)                 // transfer to new slice
+		slice = grown                      // grown becomes slice
 	}
-	slice = slice[0:n]     // truncate in case too many present
-	copy(slice[m:n], data) // populate with data
+	slice = slice[0:need] // truncate in case too many present
+	slice[need-1] = sm    // populate with data
 	return slice
 }
 
@@ -119,7 +164,7 @@ func mapKeys[K comparable, V interface{}](m map[K]V) []K {
 	var slice []K
 	for k := range m {
 		// no need for appendSlice because mapKeys is only used by NamedClass
-		// when given a gid < 0, pattern-build-time issue
+		// as a panic message when given a gid <= 0
 		slice = append(slice, k)
 	}
 	return slice
