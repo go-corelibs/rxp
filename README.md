@@ -78,7 +78,7 @@ output := rxp.Pipeline{}.
 	Transform(strings.ToLower).
 	ReplaceText(rxp.S("+"), " ").
 	ReplaceText(rxp.Text("'"), "_").
-	ReplaceText(rxp.Not(rxp.Or(rxp.W(), rxp.S()), "c"), "").
+	ReplaceText(rxp.Not(rxp.W(), rxp.S(), "c"), "").
 	Process(`Isn't  this  neat?`)
 ```
 
