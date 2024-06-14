@@ -454,6 +454,13 @@ func TestPattern_SplitString(t *testing.T) {
 					"", "b", "b", "c", "cadaaae",
 				},
 			},
+
+			{
+				input:   "abaabaccadaaae",
+				count:   -1,
+				pattern: Pattern{}.Text("z", "+"),
+				output:  []string{"abaabaccadaaae"},
+			},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q (count=%d)", idx, test.input, test.count),

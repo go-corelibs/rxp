@@ -513,6 +513,13 @@ func TestPattern_SplitBytes(t *testing.T) {
 					[]byte("cadaaae"),
 				},
 			},
+
+			{
+				input:   "abaabaccadaaae",
+				count:   -1,
+				pattern: Pattern{}.Text("z", "+"),
+				output:  [][]byte{[]byte("abaabaccadaaae")},
+			},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q (count=%d)", idx, test.input, test.count),

@@ -513,6 +513,13 @@ func TestPattern_SplitRunes(t *testing.T) {
 					[]rune("cadaaae"),
 				},
 			},
+
+			{
+				input:   "abaabaccadaaae",
+				count:   -1,
+				pattern: Pattern{}.Text("z", "+"),
+				output:  [][]rune{[]rune("abaabaccadaaae")},
+			},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q (count=%d)", idx, test.input, test.count),
