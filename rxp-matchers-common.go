@@ -14,16 +14,33 @@
 
 package rxp
 
-// FieldWord creates a Matcher equivalent to:
+// IsFieldWord creates a Matcher equivalent to:
 //
-//	(?:\b[a-zA-Z0-9]+?['a-zA-Z0-9]*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
-func FieldWord(flags ...string) Matcher {
+//	(?:\b[a-zA-Z0-9]+?[-_a-zA-Z0-9']*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
+func IsFieldWord(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope | cfg
 		if 0 > index || index >= input.len {
 			proceed = scoped.Negated()
 			return
+		}
+
+		var scanForward func(start int) (size int, ok bool)
+		scanForward = func(start int) (size int, ok bool) {
+			if nxt, sz, present := input.Get(start); present {
+				// found the next rune
+				if RuneIsALNUM(nxt) {
+					// accept this rune
+					return sz, true
+				} else if nxt == '-' || nxt == '_' || nxt == '\'' {
+					if size, ok = scanForward(start + sz); ok {
+						size += sz
+						return size, true
+					}
+				}
+			}
+			return 0, false
 		}
 
 		this, size, _ := input.Get(index) // this will never fail due to previous IndexInvalid check
@@ -37,27 +54,17 @@ func FieldWord(flags ...string) Matcher {
 			// scan for second range runes
 			for idx := index + consumed; idx < total; {
 				if r, rs, rok := input.Get(idx); rok {
-
 					if RuneIsALNUM(r) {
 						consumed += rs
 						idx += rs
 						continue
-					}
-
-					if r == '\'' {
-						if next, _, ok := input.Get(idx + rs); ok {
-							// found the next rune
-							if RuneIsALNUM(next) {
-								// accept this rune
-								consumed += rs
-								idx += rs
-								continue
-							}
+					} else if r == '-' || r == '_' || r == '\'' {
+						if sz, ok := scanForward(idx + rs); ok {
+							consumed += rs + sz
+							idx += rs + sz
+							continue
 						}
-						// end of input reached, or next is not alnum
-						// do not consume this \' rune
 					}
-
 				}
 
 				// stop scanning, not within second range anymore
