@@ -18,27 +18,27 @@ import (
 	"github.com/go-corelibs/runes"
 )
 
-// RuneBuffer is an efficient rune based buffer
-type RuneBuffer struct {
+// InputReader is an efficient rune based buffer
+type InputReader struct {
 	len int
 	buf runes.RuneReader
 }
 
-// NewRuneBuffer creates a new RuneBuffer instance for the given input string
-func NewRuneBuffer[V []rune | []byte | string](input V) *RuneBuffer {
-	rb := &RuneBuffer{}
+// NewInputReader creates a new InputReader instance for the given input string
+func NewInputReader[V []rune | []byte | string](input V) *InputReader {
+	rb := &InputReader{}
 	rb.len = len(input)
 	rb.buf = runes.NewRuneReader(input)
 	return rb
 }
 
-// Len returns the total number of runes in the RuneBuffer
-func (rb *RuneBuffer) Len() int {
+// Len returns the total number of runes in the InputReader
+func (rb *InputReader) Len() int {
 	return rb.len
 }
 
 // Get returns the Ready rune at the given index position
-func (rb *RuneBuffer) Get(index int) (r rune, size int, ok bool) {
+func (rb *InputReader) Get(index int) (r rune, size int, ok bool) {
 	if ok = 0 <= index && index < rb.len; ok {
 		r, size, _ = rb.buf.ReadRuneAt(int64(index))
 	}
@@ -46,26 +46,26 @@ func (rb *RuneBuffer) Get(index int) (r rune, size int, ok bool) {
 }
 
 // Ready returns true if the given index position is greater than or equal to
-// zero and less than the total length of the RuneBuffer
-func (rb *RuneBuffer) Ready(index int) (ready bool) {
+// zero and less than the total length of the InputReader
+func (rb *InputReader) Ready(index int) (ready bool) {
 	return 0 <= index && index < rb.len
 }
 
 // Valid returns true if the given index position is greater than or equal to
-// zero and less than or equal to the total length of the RuneBuffer
-func (rb *RuneBuffer) Valid(index int) (valid bool) {
+// zero and less than or equal to the total length of the InputReader
+func (rb *InputReader) Valid(index int) (valid bool) {
 	return 0 <= index && index <= rb.len
 }
 
 // Invalid returns true if the given index position is less than zero or greater
-// than or equal to the total length of the RuneBuffer
-func (rb *RuneBuffer) Invalid(index int) (invalid bool) {
+// than or equal to the total length of the InputReader
+func (rb *InputReader) Invalid(index int) (invalid bool) {
 	return index < 0 || index >= rb.len
 }
 
 // End returns true if this index is exactly the input length, denoting the
 // Dollar zero-width position
-func (rb *RuneBuffer) End(index int) (end bool) {
+func (rb *InputReader) End(index int) (end bool) {
 	return index == rb.len
 }
 
@@ -75,7 +75,7 @@ func (rb *RuneBuffer) End(index int) (end bool) {
 // The Prev is necessary because to find the previous rune to the given index,
 // Prev must incrementally scan backwards up to four bytes, trying to read a
 // rune without error with each iteration
-func (rb *RuneBuffer) Prev(index int) (r rune, size int, ok bool) {
+func (rb *InputReader) Prev(index int) (r rune, size int, ok bool) {
 	var err error
 	if index > 0 {
 		if r, size, err = rb.buf.ReadPrevRuneFrom(int64(index)); err == nil {
@@ -89,7 +89,7 @@ func (rb *RuneBuffer) Prev(index int) (r rune, size int, ok bool) {
 
 // Next returns the Ready rune after the given index position, or \0 if not
 // Ready
-func (rb *RuneBuffer) Next(index int) (r rune, size int, ok bool) {
+func (rb *InputReader) Next(index int) (r rune, size int, ok bool) {
 	var err error
 	if r, size, err = rb.buf.ReadNextRuneFrom(int64(index)); err == nil {
 		ok = true
@@ -101,7 +101,7 @@ func (rb *RuneBuffer) Next(index int) (r rune, size int, ok bool) {
 
 // Slice returns the range of runes from start (inclusive) to end (exclusive)
 // if the entire range is Ready
-func (rb *RuneBuffer) Slice(index, count int) (slice []rune, size int) {
+func (rb *InputReader) Slice(index, count int) (slice []rune, size int) {
 	if rb.Ready(index) {
 		slice, size, _ = rb.buf.ReadRuneSlice(int64(index), int64(count))
 	}
@@ -110,14 +110,27 @@ func (rb *RuneBuffer) Slice(index, count int) (slice []rune, size int) {
 
 // String returns the string of runes from start (inclusive) to end (exclusive)
 // if the entire range is Ready
-func (rb *RuneBuffer) String(index, count int) string {
+func (rb *InputReader) String(index, count int) string {
 	if rb.Ready(index) {
 		c := int64(count)
 		if c < 0 {
 			c = int64(rb.len) - int64(index+count) - 1
 		}
-		slice, _, _ := rb.buf.ReadRuneSlice(int64(index), c)
-		return string(slice)
+		data, _ := rb.buf.ReadString(int64(index), c)
+		return data
 	}
 	return ""
+}
+
+// Bytes returns the range of runes from start (inclusive) to end (exclusive)
+// if the entire range is Ready
+func (rb *InputReader) Bytes(index, count int) (slice []byte) {
+	if rb.Ready(index) {
+		c := int64(count)
+		if c < 0 {
+			c = int64(rb.len) - int64(index+count) - 1
+		}
+		slice, _ = rb.buf.ReadByteSlice(int64(index), c)
+	}
+	return
 }

@@ -20,10 +20,10 @@ import (
 	c "github.com/smartystreets/goconvey/convey"
 )
 
-func TestRuneBuffer(t *testing.T) {
-	c.Convey("RuneBuffer", t, func() {
+func TestInputReader(t *testing.T) {
+	c.Convey("InputReader", t, func() {
 
-		rb := NewRuneBuffer("stuff")
+		rb := NewInputReader("stuff")
 		// len
 		c.So(rb.Len(), c.ShouldEqual, 5)
 		// get
@@ -61,6 +61,10 @@ func TestRuneBuffer(t *testing.T) {
 		c.So(rb.String(1, -1), c.ShouldEqual, "tuff")
 		c.So(rb.String(1, 4), c.ShouldEqual, "tuff")
 		c.So(rb.String(5, 6), c.ShouldEqual, "")
+		// byte slice
+		c.So(rb.Bytes(1, -1), c.ShouldEqual, []byte("tuff"))
+		c.So(rb.Bytes(1, 4), c.ShouldEqual, []byte("tuff"))
+		c.So(rb.Bytes(5, 6), c.ShouldEqual, []byte(nil))
 		// prev
 		r, size, ok = rb.Prev(3)
 		c.So(ok, c.ShouldBeTrue)
