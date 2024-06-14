@@ -31,7 +31,7 @@ func Benchmark_FindAllString_Regexp(b *testing.B) {
 }
 
 func Benchmark_FindAllString_Rxp(b *testing.B) {
-	_ = Pattern{FieldWord("c")}.FindAllString(gTestDataRandomString, -1)
+	_ = Pattern{IsFieldWord("c")}.FindAllString(gTestDataRandomString, -1)
 }
 
 func Benchmark_Pipeline_Combo_Regexp(b *testing.B) {
@@ -80,11 +80,17 @@ func Benchmark_Pipeline_Readme_Regexp(b *testing.B) {
 }
 
 func Benchmark_Pipeline_Readme_Rxp(b *testing.B) {
+	// this is going to be slightly slower thant the regexp version due to the
+	// usage of Not, a better version would be one with a custom matcher that
+	// is equivalent to Not(W(), S(), "+")
+	// this benchmark is not about sheer performance but about comparing the
+	// convenience of the regexp pattern strings versus the Pattern convenience
+	// methods
 	_ = Pipeline{}.
 		Transform(strings.ToLower).
-		ReplaceText(S("+"), " ").
-		ReplaceText(Text("'"), "_").
-		ReplaceText(Not(W(), S(), "+"), "").
+		Literal(S("+"), " ").
+		Literal(Text("'"), "_").
+		Literal(Not(W(), S(), "+"), "").
 		Process(gTestDataRandomString)
 }
 
@@ -99,6 +105,6 @@ func Benchmark_Replace_ToUpper_Regexp(b *testing.B) {
 func Benchmark_Replace_ToUpper_Rxp(b *testing.B) {
 	for i := 1; i < 10; i += 1 {
 		_ = Pattern{}.RangeTable(unicode.L, "+", "m", "s", "c").
-			ReplaceAllString(gTestDataRandomString, Replace{}.ToUpper())
+			ReplaceAllString(gTestDataRandomString, Replace[string]{}.ToUpper())
 	}
 }
