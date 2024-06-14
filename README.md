@@ -1,5 +1,5 @@
 [![godoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/go-corelibs/rxp)
-[![codecov](https://codecov.io/gh/go-corelibs/rxp/graph/badge.svg?token=)](https://codecov.io/gh/go-corelibs/rxp)
+[![codecov](https://codecov.io/gh/go-corelibs/rxp/graph/badge.svg?token=H2SU6zZMqN)](https://codecov.io/gh/go-corelibs/rxp)
 [![Go Report Card](https://goreportcard.com/badge/github.com/go-corelibs/rxp)](https://goreportcard.com/report/github.com/go-corelibs/rxp)
 
 # rxp
