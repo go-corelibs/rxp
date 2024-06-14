@@ -116,13 +116,13 @@ func Not(options ...interface{}) Matcher {
 	}, flags...)
 }
 
-// Group processes the list of Matcher instances, in the order they were
-// given, and stops at the first one that does not match, discarding any
-// consumed runes. If all Matcher calls succeed, all consumed runes are
-// accepted together as this group (sub-sub-matches are not a thing)
+// Group processes the list of Matcher instances, in the order they were given,
+// and stops at the first one that does not match, discarding any consumed
+// runes. If all Matcher calls succeed, all consumed runes are accepted together
+// as this group (sub-sub-matches are not a thing in rxp)
 func Group(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope
 
 		for _, matcher := range matchers {
@@ -136,7 +136,6 @@ func Group(options ...interface{}) Matcher {
 
 		// successful match of entire group
 		proceed = !scoped.Negated()
-
 		return
 	}, flags...)
 }
