@@ -47,13 +47,50 @@ func Or(options ...interface{}) Matcher {
 	}, flags...)
 }
 
-// Not processes the given Matcher and inverts the next response without
-// consuming any runes (zero-width Matcher)
+// Not processes all the matchers given, in the order they were given, stopping
+// at the first one that succeeds and inverts the proceed return value
 //
-// Not accepts Pattern, Matcher and string types and will panic on all others
+// Not is equivalent to a negated character class in traditional regular
+// expressions, for example:
+//
+//	[^xyza-f]
+//
+// could be implemented as any of the following:
+//
+//	// slower due to four different matchers being present
+//	Not(Text("x"),Text("y"),Text("z"),R("a-f"))
+//	// better but still has two matchers
+//	Not(R("xyza-f"))
+//	// no significant difference from the previous
+//	Or(R("xyza-f"), "^") //< negation (^) flag
+//	// simplified to just one matcher present
+//	R("xyza-f", "^") //< negation (^) flag
+//
+// here's the interesting bit about rxp though, if speed is really the goal,
+// then the following would capture single characters matching [^xyz-af] with
+// significant performance over MakeMatcher based matchers (use Pattern.Add to
+// include the custom Matcher)
+//
+//	func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+//	    scoped = scope
+//	    if r, size, ok := input.Get(index); ok {
+//	        // test for [xyza-f]
+//	        proceed = (r >= 'x' && r <= 'z') || (r >= 'a' && r <= 'f')
+//	        // and invert the result
+//	        proceed = !proceed
+//	        if proceed { // true means the negation is a match
+//	        // MatchedFlag is required, CaptureFlag optionally if needed
+//	        scoped |= MatchedFlag | CaptureFlag
+//	        // consume this rune's size if a capture group is needed
+//	        // using size instead of just 1 will allow support for
+//	        // accurate []rune, []byte and string processing
+//	        consumed += size
+//	    }
+//	    return
+//	}
 func Not(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope
 		if 0 > index || index >= input.len {
 			return
@@ -67,7 +104,7 @@ func Not(options ...interface{}) Matcher {
 			}
 		}
 
-		// negate the matcher results
+		// always negate the matcher results
 		if proceed = !proceed; proceed {
 			if consumed == 0 {
 				// always consume at least one?
