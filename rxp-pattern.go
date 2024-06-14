@@ -36,6 +36,8 @@ func newPatternState[V []rune | []byte | string](p Pattern, input V) *cPatternSt
 }
 
 // match returns true if the state can process the Pattern at least count times
+//
+//gocyclo:ignore
 func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 
 	var lastInputIndex int     // track Matcher progress
