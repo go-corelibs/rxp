@@ -87,16 +87,33 @@ func IsFieldWord(flags ...string) Matcher {
 	}
 }
 
-// FieldKey creates a Matcher equivalent to:
+// IsFieldKey creates a Matcher equivalent to:
 //
-//	(?:\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
-func FieldKey(flags ...string) Matcher {
+//	(?:\b[a-zA-Z][-_a-zA-Z0-9']+?[a-zA-Z0-9]\b)
+func IsFieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
-	return func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope | cfg
 		if 0 > index || index >= input.len {
 			proceed = scoped.Negated()
 			return
+		}
+
+		var scanForward func(start int) (size int, ok bool)
+		scanForward = func(start int) (size int, ok bool) {
+			if nxt, sz, present := input.Get(start); present {
+				// found the next rune
+				if RuneIsALNUM(nxt) {
+					// accept this rune
+					return sz, true
+				} else if nxt == '-' || nxt == '_' || nxt == '\'' {
+					if size, ok = scanForward(start + sz); ok {
+						size += sz
+						return size, true
+					}
+				}
+			}
+			return 0, false
 		}
 
 		this, size, _ := input.Get(index)
@@ -107,45 +124,20 @@ func FieldKey(flags ...string) Matcher {
 
 			total := input.Len()
 
-			var scanForward func(start int) (size int, ok bool)
-			scanForward = func(start int) (size int, ok bool) {
-				if nxt, sz, present := input.Get(start); present {
-					// found the next rune
-					if RuneIsALNUM(nxt) {
-						// accept this rune
-						return sz, true
-					} else if RuneIsDashUnder(nxt) {
-						if size, ok = scanForward(start + sz); ok {
-							size += sz
-							return size, true
-						}
-					}
-				}
-				return 0, false
-			}
-
 			// scan for second range
 			for idx := index + consumed; idx < total; {
 				if r, rs, rok := input.Get(idx); rok {
-
 					if RuneIsALNUM(r) {
 						consumed += rs
 						idx += rs
 						continue
-					}
-
-					if RuneIsDashUnder(r) {
-
+					} else if r == '-' || r == '_' || r == '\'' {
 						if sz, ok := scanForward(idx + rs); ok {
 							consumed += rs + sz
 							idx += rs + sz
 							continue
 						}
-
-						// end of input reached, or next is not alnum
-						// do not consume this - or _ rune
 					}
-
 				}
 
 				// not a valid rune for this Matcher
