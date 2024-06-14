@@ -21,43 +21,79 @@ import (
 
 // Text creates a Matcher for the plain text given
 func Text(text string, flags ...string) Matcher {
-	runes := []rune(text)
+	content := []rune(text)
 
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope
-		// scan ahead without consuming runes
+
+		if scoped&NegatedFlag == NegatedFlag {
+			// the meaning of "proceed" is inverted in a negation context
+
+			if proceed = 0 > index || index >= input.len; proceed {
+				// out-of-bounds is a negative negated making it positive with
+				// zero consumed
+				return
+			} else if proceed = len(content) > input.len-index; proceed {
+				// content matching is impossible due to insufficient input, and
+				// negated consumes this index
+				_, consumed, _ = input.Get(index)
+				return
+			}
+
+			// track this index size to increment []byte and string readers correctly
+			_, size, _ := input.Get(index)
+
+			var matched bool
+			for idx := 0; idx < len(content); idx++ {
+				forward := index + idx
+
+				r, _, _ := input.Get(forward)
+
+				if scoped.AnyCase() {
+					matched = unicode.ToLower(content[idx]) == unicode.ToLower(r)
+				} else {
+					matched = content[idx] == r
+				}
+
+				if !matched {
+					break
+				}
+
+			}
+
+			if !matched {
+				// not matched is true proceed, consuming the size of this index
+				proceed = true
+				consumed = size
+			}
+
+			return
+		}
+
+		if 0 > index || index >= input.len || len(content) > input.len-index {
+			// negative index, or index oob, or insufficient input
+			return
+		}
 
 		// using the for-loop approach and unicode.ToLower reduces the actual
 		// number of times unicode.ToLower is called compared to
 		// strings.ToLower which has to scan the entire string each time
-
-		if 0 > index || index >= input.len {
-			proceed = scoped.Negated()
-			return
-		}
+		// see the commented benchmarks in rxp_x_test.go
 
 		var size int
-		for idx := 0; idx < len(runes); idx++ {
+		for idx := 0; idx < len(content); idx++ {
 			forward := index + idx // forward position
-			if proceed = 0 <= forward && forward < input.len; !proceed {
-				// forward is past EOF, OOB is not negated
-				return
-			}
 
 			r, rs, _ := input.Get(forward)
 
 			if scoped.AnyCase() {
-				proceed = unicode.ToLower(runes[idx]) == unicode.ToLower(r)
+				proceed = unicode.ToLower(content[idx]) == unicode.ToLower(r)
 			} else {
-				proceed = runes[idx] == r
-			}
-
-			if scoped.Negated() {
-				proceed = !proceed
+				proceed = content[idx] == r
 			}
 
 			if !proceed {
-				// early out
+				// definitely not a match, early out
 				return
 			}
 
