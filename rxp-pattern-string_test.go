@@ -22,110 +22,6 @@ import (
 	c "github.com/smartystreets/goconvey/convey"
 )
 
-func TestPattern_Split(t *testing.T) {
-
-	c.Convey("batch", t, func() {
-
-		for idx, test := range []struct {
-			input   string
-			count   int
-			pattern Pattern
-			output  []string
-		}{
-
-			{input: "", count: 0, pattern: nil, output: []string(nil)},
-			{input: "", count: -1, pattern: nil, output: []string(nil)},
-			{input: "contents", count: -1, pattern: nil, output: []string(nil)},
-			{input: "one two many more", count: 1, pattern: Pattern{}.S("+"), output: []string{
-				"one two many more",
-			}},
-			{input: "one two many more", count: 2, pattern: Pattern{}.S("+"), output: []string{
-				"one", "two many more",
-			}},
-
-			{
-				input:   "",
-				count:   -1,
-				pattern: Pattern{}.Text("a", "*"),
-				output:  []string{""},
-			},
-
-			{
-				input:   "bb",
-				count:   -1,
-				pattern: Pattern{}.Text("a", "*"),
-				output: []string{
-					"b", "b",
-				},
-			},
-
-			{
-				input:   "ababa",
-				count:   -1,
-				pattern: Pattern{}.Text("a", "*"),
-				output: []string{
-					"", "b", "b", "",
-				},
-			},
-
-			{
-				input:   "abaaba",
-				count:   -1,
-				pattern: Pattern{}.Text("a", "*"),
-				output: []string{
-					"", "b", "b", "",
-				},
-			},
-
-			{
-				input:   "abaabacc",
-				count:   -1,
-				pattern: Pattern{}.Text("a", "*"),
-				output: []string{
-					"", "b", "b", "c", "c",
-				},
-			},
-
-			{
-				input:   "abaabacca",
-				count:   -1,
-				pattern: Pattern{}.Text("a", "*"),
-				output: []string{
-					"", "b", "b", "c", "c", "",
-				},
-			},
-
-			{
-				input:   "abaabacca",
-				count:   -1,
-				pattern: Pattern{}.Text("a", "*"),
-				output: []string{
-					"", "b", "b", "c", "c", "",
-				},
-			},
-
-			{
-				//       v v  v vv vvvvv
-				input:   "abaabaccadaaae",
-				count:   5,
-				pattern: Pattern{}.Text("a", "*"),
-				output: []string{
-					"", "b", "b", "c", "cadaaae",
-				},
-			},
-		} {
-			c.SoMsg(
-				fmt.Sprintf("test #%d - %q (count=%d)", idx, test.input, test.count),
-				test.pattern.Split(test.input, test.count),
-				c.ShouldEqual,
-				test.output,
-			)
-		}
-
-	})
-
-}
-
 func TestPattern_MatchString(t *testing.T) {
 
 	c.Convey("batch", t, func() {
@@ -178,23 +74,23 @@ func TestPattern_FindString(t *testing.T) {
 
 }
 
-func TestPattern_FindIndex(t *testing.T) {
+func TestPattern_FindStringIndex(t *testing.T) {
 
 	c.Convey("batch", t, func() {
 
 		for idx, test := range []struct {
 			input   string
 			pattern Pattern
-			output  []int
+			output  [2]int
 		}{
 
-			{input: "", pattern: nil, output: []int(nil)},
-			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), output: []int{0, 1}},
-			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), output: []int{0, 1}},
+			{input: "", pattern: nil, output: [2]int{}},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), output: [2]int{0, 1}},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), output: [2]int{0, 1}},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q", idx, test.input),
-				test.pattern.FindIndex(test.input),
+				test.pattern.FindStringIndex(test.input),
 				c.ShouldEqual,
 				test.output,
 			)
@@ -204,7 +100,7 @@ func TestPattern_FindIndex(t *testing.T) {
 
 }
 
-func TestPattern_FindAllIndex(t *testing.T) {
+func TestPattern_FindAllStringIndex(t *testing.T) {
 
 	c.Convey("batch", t, func() {
 
@@ -212,12 +108,12 @@ func TestPattern_FindAllIndex(t *testing.T) {
 			input   string
 			pattern Pattern
 			count   int
-			output  [][]int
+			output  [][2]int
 		}{
 
-			{input: "", pattern: nil, count: -1, output: [][]int{{0, 0}}},
-			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: 1, output: [][]int{{0, 1}}},
-			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: [][]int{{0, 1}, {1, 2}}},
+			{input: "", pattern: nil, count: -1, output: [][2]int{{0, 0}}},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: 1, output: [][2]int{{0, 1}}},
+			{input: "aa", pattern: Pattern{}.Dot("{1}", "c"), count: -1, output: [][2]int{{0, 1}, {1, 2}}},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q", idx, test.input),
@@ -321,43 +217,47 @@ func TestPattern_ReplaceAllString(t *testing.T) {
 		for idx, test := range []struct {
 			input   string
 			pattern Pattern
-			replace Replace
+			replace Replace[string]
 			output  string
 		}{
 
-			{
+			{ // testing that +? does not match input
 				input: "module@1.0.0/thing.txt",
 				pattern: Pattern{
-					Text("@"),
-					Text("/", "^", "+?"),
-					Text("/"),
+					Group("c",
+						Text("@"),
+						Text("/", "^", "+?"),
+						Text("/"),
+					),
 				},
-				replace: Replace{}.WithText("/"),
+				replace: Replace[string]{}.WithLiteral("/"),
 				output:  "module@1.0.0/thing.txt",
 			},
 
-			{
+			{ // testing that + does match input
 				input: "module@1.0.0/thing.txt",
 				pattern: Pattern{
-					Text("@"),
-					Text("/", "^", "+"),
-					Text("/"),
+					Group("c",
+						Text("@"),
+						Text("/", "^", "+"),
+						Text("/"),
+					),
 				},
-				replace: Replace{}.WithText("/"),
+				replace: Replace[string]{}.WithLiteral("/"),
 				output:  "module/thing.txt",
 			},
 
 			{
 				input:   "one",
 				pattern: Pattern{}.Dot("+", "c"),
-				replace: Replace{}.ToUpper(),
+				replace: Replace[string]{}.ToUpper(),
 				output:  "ONE",
 			},
 
 			{
 				input:   "one",
 				pattern: Pattern{}.Dot("{1}", "c"),
-				replace: Replace{}.ToUpper(),
+				replace: Replace[string]{}.ToUpper(),
 				output:  "ONE",
 			},
 
@@ -375,6 +275,57 @@ func TestPattern_ReplaceAllString(t *testing.T) {
 
 }
 
+func TestPattern_ReplaceAllLiteralString(t *testing.T) {
+
+	c.Convey("batch", t, func() {
+
+		for idx, test := range []struct {
+			input   string
+			pattern Pattern
+			replace string
+			output  string
+		}{
+
+			{ // testing that +? does not match input
+				input: "module@1.0.0/thing.txt",
+				pattern: Pattern{
+					Group("c",
+						Text("@"),
+						Text("/", "^", "+?"),
+						Text("/"),
+					),
+				},
+				replace: "/",
+				output:  "module@1.0.0/thing.txt",
+			},
+
+			{ // testing that + does match input
+				input: "module@1.0.0/thing.txt",
+				pattern: Pattern{
+					Group("c",
+						Text("@"),
+						Text("/", "^", "+"),
+						Text("/"),
+					),
+				},
+				replace: "/",
+				output:  "module/thing.txt",
+			},
+
+			{input: "", pattern: nil, replace: "", output: ""},
+		} {
+			c.SoMsg(
+				fmt.Sprintf("test #%d - %q", idx, test.input),
+				test.pattern.ReplaceAllLiteralString(test.input, test.replace),
+				c.ShouldEqual,
+				test.output,
+			)
+		}
+
+	})
+
+}
+
 func TestPattern_ReplaceAllStringFunc(t *testing.T) {
 
 	c.Convey("batch", t, func() {
@@ -382,20 +333,23 @@ func TestPattern_ReplaceAllStringFunc(t *testing.T) {
 		for idx, test := range []struct {
 			input     string
 			pattern   Pattern
-			transform Transform
+			transform Transform[string]
 			output    string
 		}{
 
+			{input: "", pattern: nil, output: ""},
 			{input: "one", pattern: Pattern{}.Dot("+", "c"), transform: func(input string) (output string) {
 				return input
 			}, output: "one"},
+			{input: "one two.", pattern: Pattern{}.W("+", "c"), transform: func(input string) (output string) {
+				return input + "!"
+			}, output: "one! two!."},
 			{input: "one", pattern: Pattern{}.Dot("{1}", "c"), transform: func(input string) (output string) {
 				return strings.ToUpper(input)
 			}, output: "ONE"},
 			{input: "one\ntwo", pattern: Pattern{}.Dot("+", "s", "c"), transform: func(input string) (output string) {
 				return strings.ToUpper(input)
 			}, output: "ONE\nTWO"},
-			{input: "", pattern: nil, output: ""},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q", idx, test.input),
@@ -409,55 +363,105 @@ func TestPattern_ReplaceAllStringFunc(t *testing.T) {
 
 }
 
-func TestPattern_ScanStrings(t *testing.T) {
+func TestPattern_SplitString(t *testing.T) {
 
 	c.Convey("batch", t, func() {
 
-		c.Convey("Strings", func() {
+		for idx, test := range []struct {
+			input   string
+			count   int
+			pattern Pattern
+			output  []string
+		}{
 
-			for idx, test := range []struct {
-				input   string
-				pattern Pattern
-				output  []string
-			}{
+			{input: "", count: 0, pattern: nil, output: []string(nil)},
+			{input: "", count: -1, pattern: nil, output: []string(nil)},
+			{input: "contents", count: -1, pattern: nil, output: []string(nil)},
+			{input: "one two many more", count: 1, pattern: Pattern{}.S("+"), output: []string{
+				"one two many more",
+			}},
+			{input: "one two many more", count: 2, pattern: Pattern{}.S("+"), output: []string{
+				"one", "two many more",
+			}},
 
-				{input: "", pattern: nil, output: []string{""}},
-				{input: "one", pattern: Pattern{}.Dot("+", "c"), output: []string{"one"}},
-				{input: "one", pattern: Pattern{}.Dot("{1}", "c"), output: []string{"o", "n", "e"}},
-				{input: "one", pattern: Pattern{}.Text("nope", "c"), output: []string{"one"}},
-			} {
-				c.SoMsg(
-					fmt.Sprintf("test #%d - %q", idx, test.input),
-					test.pattern.ScanStrings(test.input).Strings(),
-					c.ShouldEqual,
-					test.output,
-				)
-			}
+			{
+				input:   "",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "*"),
+				output:  []string{""},
+			},
 
-		})
+			{
+				input:   "bb",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "*"),
+				output: []string{
+					"b", "b",
+				},
+			},
 
-		c.Convey("Indexes", func() {
+			{
+				input:   "ababa",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "*"),
+				output: []string{
+					"", "b", "b", "",
+				},
+			},
 
-			for idx, test := range []struct {
-				input   string
-				pattern Pattern
-				output  [][]int
-			}{
+			{
+				input:   "abaaba",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "*"),
+				output: []string{
+					"", "b", "b", "",
+				},
+			},
 
-				{input: "", pattern: nil, output: [][]int{{0, 0}}},
-				{input: "one", pattern: Pattern{}.Dot("+", "c"), output: [][]int{{0, 3}}},
-				{input: "one", pattern: Pattern{}.Dot("{1}", "c"), output: [][]int{{0, 1}, {1, 2}, {2, 3}}},
-				{input: "one", pattern: Pattern{}.Text("nope", "c"), output: [][]int{{0, 3}}},
-			} {
-				c.SoMsg(
-					fmt.Sprintf("test #%d - %q", idx, test.input),
-					test.pattern.ScanStrings(test.input).Indexes(),
-					c.ShouldEqual,
-					test.output,
-				)
-			}
+			{
+				input:   "abaabacc",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "*"),
+				output: []string{
+					"", "b", "b", "c", "c",
+				},
+			},
 
-		})
+			{
+				input:   "abaabacca",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "*"),
+				output: []string{
+					"", "b", "b", "c", "c", "",
+				},
+			},
+
+			{
+				input:   "abaabacca",
+				count:   -1,
+				pattern: Pattern{}.Text("a", "+"),
+				output: []string{
+					"", "b", "b", "cc", "",
+				},
+			},
+
+			{
+				//       v v  v vv vvvvv
+				input:   "abaabaccadaaae",
+				count:   5,
+				pattern: Pattern{}.Text("a", "*"),
+				output: []string{
+					"", "b", "b", "c", "cadaaae",
+				},
+			},
+		} {
+			c.SoMsg(
+				fmt.Sprintf("test #%d - %q (count=%d)", idx, test.input, test.count),
+				test.pattern.SplitString(test.input, test.count),
+				c.ShouldEqual,
+				test.output,
+			)
+		}
 
 	})
 

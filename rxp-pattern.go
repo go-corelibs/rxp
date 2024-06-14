@@ -19,16 +19,16 @@ package rxp
 type Pattern []Matcher
 
 type cPatternState struct {
-	input   *RuneBuffer // input rune buffer
-	index   int         // current match position (total runes consumed)
-	pattern Pattern     // list of fragments to satisfy as a match
-	capture []bool      // denotes corresponding matches are capture groups or not
-	matches [][][2]int  // list of matches (with matched capture groups)
+	input   *InputReader // input rune buffer
+	index   int          // current match position (total runes consumed)
+	pattern Pattern      // list of fragments to satisfy as a match
+	capture []bool       // denotes corresponding matches are capture groups or not
+	matches [][][2]int   // list of matches (with matched capture groups)
 }
 
 func newPatternState[V []rune | []byte | string](p Pattern, input V) *cPatternState {
 	return &cPatternState{
-		input:   NewRuneBuffer(input),
+		input:   NewInputReader(input),
 		index:   0,
 		pattern: p,
 		matches: [][][2]int{},
@@ -59,7 +59,7 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 			// call each matcher once, expecting matcher to progress the index
 			if scoping, keep, proceed := matcher(DefaultFlags, gDefaultReps, s.input, s.index, set); proceed {
 				if scoping.Capture() {
-					set = pushSMSlice(set, s.index, s.index+keep)
+					set = pushSubMatch(set, [2]int{s.index, s.index + keep})
 				}
 				if keep > 0 {
 					consumed += keep
@@ -118,66 +118,4 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 	}
 
 	return len(s.matches) > 0
-}
-
-func (p Pattern) scanner(s *cPatternState) (segments Segments) {
-
-	if len(p) == 0 {
-		return []Segment{&cSegment{
-			input:   s.input,
-			matched: false,
-			matches: [][2]int{{0, s.input.Len()}},
-		}}
-	}
-
-	if !p.match(s, -1) {
-		return []Segment{&cSegment{
-			input:   s.input,
-			matched: false,
-			matches: [][2]int{{0, s.input.Len()}},
-		}}
-	}
-
-	var last int
-	for _, group := range s.matches {
-		if last < group[0][0] {
-			segments = pushSegments(segments, &cSegment{
-				input:   s.input,
-				matched: false,
-				matches: [][2]int{{last, group[0][0]}},
-			})
-		}
-		last = group[0][1]
-
-		segments = pushSegments(segments, &cSegment{
-			input:   s.input,
-			matched: true,
-			matches: group,
-		})
-	}
-
-	if last < s.input.Len() {
-		segments = pushSegments(segments, &cSegment{
-			input:   s.input,
-			matched: false,
-			matches: [][2]int{{last, s.input.Len()}},
-		})
-	}
-	s.matches = nil
-	return
-}
-
-func (p Pattern) findString(s *cPatternState, count int) (matched [][]string) {
-	if p.match(s, count) {
-		for _, match := range s.matches {
-			if len(match) > 0 {
-				var groups []string
-				for _, submatch := range match {
-					groups = pushString(groups, s.input.String(submatch[0], submatch[1]-submatch[0]))
-				}
-				matched = pushStrings(matched, groups)
-			}
-		}
-	}
-	return
 }

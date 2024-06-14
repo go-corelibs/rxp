@@ -25,37 +25,37 @@ var regexpFindTests = []struct {
 	regexp  string
 	pattern Pattern
 	input   string
-	output  [][]int
+	output  [][2]int
 }{
 	{
 		regexp:  ``,
 		pattern: Pattern{},
 		input:   ``,
-		output:  build(1, 0, 0),
+		output:  build(0, 0),
 	},
 	{
 		regexp:  `^abcdefg`,
 		pattern: Pattern{}.Caret().Text(`abcdefg`),
 		input:   "abcdefg",
-		output:  build(1, 0, 7),
+		output:  build(0, 7),
 	},
 	{
 		regexp:  `a+`,
 		pattern: Pattern{}.Text(`a`, "+"),
 		input:   "baaab",
-		output:  build(1, 1, 4),
+		output:  build(1, 4),
 	},
 	{
 		regexp:  `abcd..`,
 		pattern: Pattern{}.Text("abcd").Dot().Dot(),
 		input:   "abcdef",
-		output:  build(1, 0, 6),
+		output:  build(0, 6),
 	},
 	{
 		regexp:  `a`,
 		pattern: Pattern{}.Text(`a`),
 		input:   "a",
-		output:  build(1, 0, 1),
+		output:  build(0, 1),
 	},
 	{
 		regexp:  `x`,
@@ -67,37 +67,37 @@ var regexpFindTests = []struct {
 		regexp:  `b`,
 		pattern: Pattern{}.Text(`b`),
 		input:   "abc",
-		output:  build(1, 1, 2),
+		output:  build(1, 2),
 	},
 	{
 		regexp:  `.`,
 		pattern: Pattern{}.Dot(),
 		input:   "a",
-		output:  build(1, 0, 1),
+		output:  build(0, 1),
 	},
 	{
 		regexp:  `.*`,
 		pattern: Pattern{}.Dot("*"),
 		input:   "abcdef",
-		output:  build(1, 0, 6),
+		output:  build(0, 6),
 	},
 	{
 		regexp:  `^`,
 		pattern: Pattern{}.Caret(),
 		input:   "abcde",
-		output:  build(1, 0, 0),
+		output:  build(0, 0),
 	},
 	{
 		regexp:  `$`,
 		pattern: Pattern{}.Dollar(),
 		input:   "abcde",
-		output:  build(1, 5, 5),
+		output:  build(5, 5),
 	},
 	{
 		regexp:  `^abcd$`,
 		pattern: Pattern{}.Caret().Text(`abcd`).Dollar(),
 		input:   "abcd",
-		output:  build(1, 0, 4),
+		output:  build(0, 4),
 	},
 	{
 		regexp:  `^bcd'`,
@@ -115,55 +115,55 @@ var regexpFindTests = []struct {
 		regexp:  `a+`,
 		pattern: Pattern{}.Text(`a`, "+"),
 		input:   "baaab",
-		output:  build(1, 1, 4),
+		output:  build(1, 4),
 	},
 	{
 		regexp:  `a*`,
 		pattern: Pattern{}.Text(`a`, "*"),
 		input:   "baaab",
-		output:  build(3, 0, 0, 1, 4, 5, 5),
+		output:  build(0, 0, 1, 4, 5, 5),
 	},
 	{
 		regexp:  `[a-z]+`,
 		pattern: Pattern{}.R(`a-z`, "+"),
 		input:   "abcd",
-		output:  build(1, 0, 4),
+		output:  build(0, 4),
 	},
 	{
 		regexp:  `[^a-z]+`,
 		pattern: Pattern{}.R(`a-z`, "^", "+"),
 		input:   "ab1234cd",
-		output:  build(1, 2, 6),
+		output:  build(2, 6),
 	},
 	{
 		regexp:  `[a\-\]z]+`,
 		pattern: Pattern{}.R(`-a]z`, "+"),
 		input:   "az]-bcz",
-		output:  build(2, 0, 4, 6, 7),
+		output:  build(0, 4, 6, 7),
 	},
 	{
 		regexp:  `[^\n]+`,
 		pattern: Pattern{}.R("\n", "^", "+"),
 		input:   "abcd\n",
-		output:  build(1, 0, 4),
+		output:  build(0, 4),
 	},
 	{
 		regexp:  `[日本語]+`,
 		pattern: Pattern{}.R(`日本語`, "+"),
 		input:   "日本語日本語",
-		output:  build(1, 0, 18),
+		output:  build(0, 18),
 	},
 	{
 		regexp:  `日本語+`,
 		pattern: Pattern{}.Text(`日`).Text(`本`).Text(`語`, "+"),
 		input:   "日本語",
-		output:  build(1, 0, 9),
+		output:  build(0, 9),
 	},
 	{
 		regexp:  `日本語+`,
 		pattern: Pattern{}.Text(`日`).Text(`本`).Text(`語`, "+"),
 		input:   "日本語語語語",
-		output:  build(1, 0, 18),
+		output:  build(0, 18),
 	},
 
 	//{
@@ -246,13 +246,13 @@ var regexpFindTests = []struct {
 		regexp:  `[.]`, // 23
 		pattern: Pattern{}.R("."),
 		input:   ".",
-		output:  build(1, 0, 1),
+		output:  build(0, 1),
 	},
 	{
 		regexp:  `/$`,
 		pattern: Pattern{}.Text(`/`).Dollar(),
 		input:   "/abc/",
-		output:  build(1, 4, 5),
+		output:  build(4, 5),
 	},
 	{
 		regexp:  `/$`,
@@ -266,7 +266,7 @@ var regexpFindTests = []struct {
 		regexp:  `.`,
 		pattern: Pattern{}.Dot(),
 		input:   "abc",
-		output:  build(3, 0, 1, 1, 2, 2, 3),
+		output:  build(0, 1, 1, 2, 2, 3),
 	},
 	//{
 	//	pattern: Pattern{}.Text(`(.)`),
@@ -282,7 +282,7 @@ var regexpFindTests = []struct {
 		regexp:  `ab*`, //27
 		pattern: Pattern{}.Text(`a`).Text(`b`, "*"),
 		input:   "abbaab",
-		output:  build(3, 0, 3, 3, 4, 4, 6),
+		output:  build(0, 3, 3, 4, 4, 6),
 	},
 	//{
 	//	pattern: Pattern{}.Text(`a(b*)`),
@@ -295,7 +295,7 @@ var regexpFindTests = []struct {
 		regexp:  `ab$`,
 		pattern: Pattern{}.Text(`ab`).Dollar(),
 		input:   "cab",
-		output:  build(1, 1, 3),
+		output:  build(1, 3),
 	},
 	{
 		regexp:  `axxb$`,
@@ -307,7 +307,7 @@ var regexpFindTests = []struct {
 		regexp:  `data`,
 		pattern: Pattern{}.Text(`data`),
 		input:   "daXY data",
-		output:  build(1, 5, 9),
+		output:  build(5, 9),
 	},
 	//{
 	//	pattern: Pattern{}.Text(`da(.)a$`),
@@ -318,13 +318,13 @@ var regexpFindTests = []struct {
 		regexp:  `zx+`,
 		pattern: Pattern{}.Text(`z`).Text(`x`, "+"),
 		input:   "zzx",
-		output:  build(1, 1, 3),
+		output:  build(1, 3),
 	},
 	{
 		regexp:  `ab$`,
 		pattern: Pattern{}.Text(`ab`).Dollar(),
 		input:   "abcab",
-		output:  build(1, 3, 5),
+		output:  build(3, 5),
 	},
 	//{
 	//	pattern: Pattern{}.Text(`(aa)*$`),
@@ -370,25 +370,25 @@ var regexpFindTests = []struct {
 		regexp:  `\b`, // 33
 		pattern: Pattern{}.B(),
 		input:   "x",
-		output:  build(2, 0, 0, 1, 1),
+		output:  build(0, 0, 1, 1),
 	},
 	{
 		regexp:  `\b`,
 		pattern: Pattern{}.B(),
 		input:   "xx",
-		output:  build(2, 0, 0, 2, 2),
+		output:  build(0, 0, 2, 2),
 	},
 	{
 		regexp:  `\b`,
 		pattern: Pattern{}.B(),
 		input:   "x y",
-		output:  build(4, 0, 0, 1, 1, 2, 2, 3, 3),
+		output:  build(0, 0, 1, 1, 2, 2, 3, 3),
 	},
 	{
 		regexp:  `\b`,
 		pattern: Pattern{}.B(),
 		input:   "xx yy",
-		output:  build(4, 0, 0, 2, 2, 3, 3, 5, 5),
+		output:  build(0, 0, 2, 2, 3, 3, 5, 5),
 	},
 	{
 		regexp:  `\b`,
@@ -400,7 +400,7 @@ var regexpFindTests = []struct {
 		regexp:  `\b`,
 		pattern: Pattern{}.B("^"),
 		input:   "xx",
-		output:  build(1, 1, 1),
+		output:  build(1, 1),
 	},
 	{
 		regexp:  `\b`,
@@ -412,7 +412,7 @@ var regexpFindTests = []struct {
 		regexp:  `\b`,
 		pattern: Pattern{}.B("^"),
 		input:   "xx yy",
-		output:  build(2, 1, 1, 4, 4),
+		output:  build(1, 1, 4, 4),
 	},
 	//{
 	//	pattern: Pattern{}.Text(`(|a)*`),
@@ -479,13 +479,13 @@ var regexpFindTests = []struct {
 		regexp:  "`",
 		pattern: Pattern{}.Text("`"),
 		input:   "`",
-		output:  build(1, 0, 1),
+		output:  build(0, 1),
 	},
 	{
 		regexp:  "[`]+",
 		pattern: Pattern{}.R("`", "+"),
 		input:   "`",
-		output:  build(1, 0, 1),
+		output:  build(0, 1),
 	},
 
 	//{
@@ -502,7 +502,7 @@ var regexpFindTests = []struct {
 		regexp:  `.*`,
 		pattern: Pattern{}.Dot("*"),
 		input:   "hello\xffworld",
-		output:  build(1, 0, 11),
+		output:  build(0, 11),
 	},
 	//{
 	//	pattern: Pattern{}.Text(`\x{fffd}`),
@@ -525,28 +525,25 @@ var regexpFindTests = []struct {
 		regexp:  `.`,
 		pattern: Pattern{}.Dot(),
 		input:   "qwertyuiopasdfghjklzxcvbnm1234567890",
-		output: build(36, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10,
-			10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
-			20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30,
-			30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36),
+		output:  build(0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36),
 	},
 }
 
-// build is a helper to construct a [][]int by extracting n sequences from x.
-// This represents n matches with len(x)/n submatches each.
+// build is a helper to construct a [][2]int by extracting n sequences from x.
+// This represents n matches with len(x)/n sub-matches each.
 //
 // build is borrowed from regexp v1.22.4
-func build(n int, x ...int) [][]int {
-	ret := make([][]int, n)
-	runLength := len(x) / n
-	j := 0
-	for i := range ret {
-		ret[i] = make([]int, runLength)
-		copy(ret[i], x[j:])
-		j += runLength
-		if j > len(x) {
-			panic("invalid build entry")
-		}
+func build(pairs ...int) [][2]int {
+	size := len(pairs)
+	if size%2 != 0 {
+		panic("qa developer error, build requires an even number of start/end index arguments")
+	}
+	count := size / 2
+	ret := make([][2]int, count)
+	jdx := 0
+	for idx := 0; idx < size; idx += 2 {
+		ret[jdx] = [2]int{pairs[idx], pairs[idx+1]}
+		jdx += 1
 	}
 	return ret
 }
