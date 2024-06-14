@@ -14,6 +14,22 @@
 
 package rxp
 
+func isFieldWordScanForward(input *InputReader, start int) (size int, ok bool) {
+	if nxt, sz, present := input.Get(start); present {
+		// found the next rune
+		if RuneIsALNUM(nxt) {
+			// accept this rune
+			return sz, true
+		} else if nxt == '-' || nxt == '_' || nxt == '\'' {
+			if size, ok = isFieldWordScanForward(input, start+sz); ok {
+				size += sz
+				return size, true
+			}
+		}
+	}
+	return 0, false
+}
+
 // IsFieldWord creates a Matcher equivalent to:
 //
 //	(?:\b[a-zA-Z0-9]+?[-_a-zA-Z0-9']*[a-zA-Z0-9]+\b|\b[a-zA-Z0-9]+\b)
@@ -26,47 +42,27 @@ func IsFieldWord(flags ...string) Matcher {
 			return
 		}
 
-		var scanForward func(start int) (size int, ok bool)
-		scanForward = func(start int) (size int, ok bool) {
-			if nxt, sz, present := input.Get(start); present {
-				// found the next rune
-				if RuneIsALNUM(nxt) {
-					// accept this rune
-					return sz, true
-				} else if nxt == '-' || nxt == '_' || nxt == '\'' {
-					if size, ok = scanForward(start + sz); ok {
-						size += sz
-						return size, true
-					}
-				}
-			}
-			return 0, false
-		}
-
 		this, size, _ := input.Get(index) // this will never fail due to previous IndexInvalid check
 
 		if proceed = RuneIsALNUM(this); proceed {
 			// first rune matched the first range [a-zA-Z]
 			consumed += size
 
-			total := input.Len()
-
 			// scan for second range runes
-			for idx := index + consumed; idx < total; {
+			for idx := index + consumed; idx < input.len; {
 				if r, rs, rok := input.Get(idx); rok {
 					if RuneIsALNUM(r) {
 						consumed += rs
 						idx += rs
 						continue
 					} else if r == '-' || r == '_' || r == '\'' {
-						if sz, ok := scanForward(idx + rs); ok {
+						if sz, ok := isFieldWordScanForward(input, idx+rs); ok {
 							consumed += rs + sz
 							idx += rs + sz
 							continue
 						}
 					}
 				}
-
 				// stop scanning, not within second range anymore
 				break
 			}
@@ -87,6 +83,22 @@ func IsFieldWord(flags ...string) Matcher {
 	}
 }
 
+func isFieldKeyScanForward(input *InputReader, start int) (size int, ok bool) {
+	if nxt, sz, present := input.Get(start); present {
+		// found the next rune
+		if RuneIsALNUM(nxt) {
+			// accept this rune
+			return sz, true
+		} else if nxt == '-' || nxt == '_' || nxt == '\'' {
+			if size, ok = isFieldKeyScanForward(input, start+sz); ok {
+				size += sz
+				return size, true
+			}
+		}
+	}
+	return 0, false
+}
+
 // IsFieldKey creates a Matcher equivalent to:
 //
 //	(?:\b[a-zA-Z][-_a-zA-Z0-9']+?[a-zA-Z0-9]\b)
@@ -99,40 +111,21 @@ func IsFieldKey(flags ...string) Matcher {
 			return
 		}
 
-		var scanForward func(start int) (size int, ok bool)
-		scanForward = func(start int) (size int, ok bool) {
-			if nxt, sz, present := input.Get(start); present {
-				// found the next rune
-				if RuneIsALNUM(nxt) {
-					// accept this rune
-					return sz, true
-				} else if nxt == '-' || nxt == '_' || nxt == '\'' {
-					if size, ok = scanForward(start + sz); ok {
-						size += sz
-						return size, true
-					}
-				}
-			}
-			return 0, false
-		}
-
 		this, size, _ := input.Get(index)
 
 		if proceed = RuneIsALPHA(this); proceed {
 			// matched first range [a-zA-Z]
 			consumed += size
 
-			total := input.Len()
-
 			// scan for second range
-			for idx := index + consumed; idx < total; {
+			for idx := index + consumed; idx < input.len; {
 				if r, rs, rok := input.Get(idx); rok {
 					if RuneIsALNUM(r) {
 						consumed += rs
 						idx += rs
 						continue
 					} else if r == '-' || r == '_' || r == '\'' {
-						if sz, ok := scanForward(idx + rs); ok {
+						if sz, ok := isFieldKeyScanForward(input, idx+rs); ok {
 							consumed += rs + sz
 							idx += rs + sz
 							continue
@@ -154,6 +147,22 @@ func IsFieldKey(flags ...string) Matcher {
 	}
 }
 
+func isKeywordScanForward(input *InputReader, start int) (size int, ok bool) {
+	if nxt, sz, present := input.Get(start); present {
+		// found the next rune
+		if RuneIsALNUM(nxt) {
+			// accept this rune
+			return sz, true
+		} else if nxt == '-' || nxt == '_' || nxt == '\'' {
+			if size, ok = isKeywordScanForward(input, start+sz); ok {
+				size += sz
+				return size, true
+			}
+		}
+	}
+	return 0, false
+}
+
 // IsKeyword is intended for Go-Enjin parsing of simple search keywords from
 // user input and creates a Matcher equivalent to:
 //
@@ -168,23 +177,6 @@ func IsKeyword(flags ...string) Matcher {
 		}
 
 		this, size, _ := input.Get(index)
-
-		var scanForward func(start int) (size int, ok bool)
-		scanForward = func(start int) (size int, ok bool) {
-			if nxt, sz, present := input.Get(start); present {
-				// found the next rune
-				if RuneIsALNUM(nxt) {
-					// accept this rune
-					return sz, true
-				} else if nxt == '-' || nxt == '_' || nxt == '\'' {
-					if size, ok = scanForward(start + sz); ok {
-						size += sz
-						return size, true
-					}
-				}
-			}
-			return 0, false
-		}
 
 		var plusOrMinus rune
 		if this == '+' || this == '-' {
@@ -204,10 +196,8 @@ func IsKeyword(flags ...string) Matcher {
 			// this matched first range [a-zA-Z]
 			consumed += size
 
-			total := input.Len()
-
 			// scan for second range
-			for idx := index + consumed; idx < total; {
+			for idx := index + consumed; idx < input.len; {
 				if r, rs, rok := input.Get(idx); rok {
 
 					if RuneIsALNUM(r) {
@@ -215,7 +205,7 @@ func IsKeyword(flags ...string) Matcher {
 						idx += rs
 						continue
 					} else if r == '-' || r == '_' || r == '\'' {
-						if sz, ok := scanForward(idx + rs); ok {
+						if sz, ok := isKeywordScanForward(input, idx+rs); ok {
 							consumed += rs + sz
 							idx += rs + sz
 							continue
@@ -228,10 +218,7 @@ func IsKeyword(flags ...string) Matcher {
 				break
 			}
 
-		}
-
-		if scoped.Negated() {
-			proceed = !proceed
+			proceed = !scoped.Negated()
 		}
 
 		return
