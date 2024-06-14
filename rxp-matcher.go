@@ -43,7 +43,7 @@ func WrapMatcher(matcher RuneMatcher, flags ...string) Matcher {
 		scoped = scope
 		if 0 <= index && index < input.len {
 			r, size, _ := input.Get(index)
-			if proceed = matcher(r); scoped.Negated() {
+			if proceed = matcher(r); scoped&NegatedFlag == NegatedFlag {
 				proceed = !proceed
 			}
 			if proceed {
