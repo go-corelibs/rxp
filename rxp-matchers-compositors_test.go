@@ -31,13 +31,11 @@ func TestMatchersCompositors(t *testing.T) {
 			output  [][]string
 		}{
 
-			//{
-			//	input: "aBb Aa!",
-			//	//pattern: Pattern{}.Or(Pattern{}.W("^").S(), "c"),
-			//	//pattern: Pattern{}.Or(Pattern{}.W("^"), "c"),
-			//	pattern: Pattern{}.W("^", "c"),
-			//	output:  [][]string{{" ", " "}, {"!", "!"}},
-			//},
+			{
+				input:   "isn't this neat?",
+				pattern: Pattern{}.Or(W(), S(), "^"),
+				output:  [][]string{{"'"}, {"?"}},
+			},
 
 			{
 				input: "aBbAa",
@@ -118,6 +116,29 @@ func TestMatchersCompositors(t *testing.T) {
 					Text("B"),
 				),
 				output: [][]string{{"a"}, {"aa"}},
+			},
+
+			{
+				input: "abcdefghijk",
+				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+					scoped = scope
+					if r, size, ok := input.Get(index); ok {
+						// test for [xyza-f]
+						proceed = (r >= 'x' && r <= 'z') || (r >= 'a' && r <= 'f')
+						// and invert the result
+						proceed = !proceed
+						if proceed { // true means the negation is a match
+							// MatchedFlag is required, CaptureFlag optionally if needed
+							scoped |= MatchedFlag | CaptureFlag
+							// consume this rune's size if a capture group is needed
+							// using size instead of just 1 will allow support for
+							// accurate []rune, []byte and string processing
+							consumed += size
+						}
+					}
+					return
+				}),
+				output: [][]string{{"g", "g"}, {"h", "h"}, {"i", "i"}, {"j", "j"}, {"k", "k"}},
 			},
 		} {
 			c.SoMsg(
@@ -218,7 +239,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -230,7 +251,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "other-thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -242,7 +263,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "other_-thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -254,7 +275,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "other_-_thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -266,7 +287,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "other1thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -278,7 +299,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "other-1thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -290,7 +311,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "0other_-_thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -302,7 +323,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "0-other_-_thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").
@@ -314,7 +335,7 @@ func TestMatchersCompositors(t *testing.T) {
 				input: "-other_-_thing[10]",
 				pattern: Pattern{}.
 					A().
-					Add(FieldKey("+", "c")).
+					Add(IsFieldKey("+", "c")).
 					Text("[").
 					D("+", "c").
 					Text("]").

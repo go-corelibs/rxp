@@ -23,7 +23,7 @@ import (
 
 func TestMatchersCommon(t *testing.T) {
 
-	c.Convey("FieldWord", t, func() {
+	c.Convey("IsFieldWord", t, func() {
 
 		for idx, test := range []struct {
 			input   string
@@ -32,113 +32,68 @@ func TestMatchersCommon(t *testing.T) {
 		}{
 			{
 				input:   "a' ",
-				pattern: Pattern{}.Add(FieldWord("c", "^")),
-				output:  []string{"a' "},
+				pattern: Pattern{}.Add(IsFieldWord("c", "^")),
+				output:  []string{"'", " "},
 			},
 
 			{
 				input:   "a' ",
-				pattern: Pattern{}.Add(FieldWord("c")),
-				output:  []string{"a", "' "},
+				pattern: Pattern{}.Add(IsFieldWord("c")),
+				output:  []string{"a"},
 			},
 
 			{
 				input:   "a",
-				pattern: Pattern{}.Add(FieldWord("c")),
+				pattern: Pattern{}.Add(IsFieldWord("c")),
 				output:  []string{"a"},
 			},
 
 			{
 				input:   "aa",
-				pattern: Pattern{}.Add(FieldWord("c")),
+				pattern: Pattern{}.Add(IsFieldWord("c")),
 				output:  []string{"aa"},
 			},
 
 			{
 				input:   "one two won't do",
-				pattern: Pattern{}.Add(FieldWord("c")),
-				output:  []string{"one", " ", "two", " ", "won't", " ", "do"},
+				pattern: Pattern{}.Add(IsFieldWord("c")),
+				output:  []string{"one", "two", "won't", "do"},
 			},
 
 			{
 				input:   "-one two won't do",
-				pattern: Pattern{}.Add(FieldWord("c")),
-				output:  []string{"-", "one", " ", "two", " ", "won't", " ", "do"},
+				pattern: Pattern{}.Add(IsFieldWord("c")),
+				output:  []string{"one", "two", "won't", "do"},
 			},
 
 			{
 				input:   "-one-two  won't do",
-				pattern: Pattern{}.Add(FieldWord("c")),
-				output:  []string{"-", "one", "-", "two", "  ", "won't", " ", "do"},
+				pattern: Pattern{}.Add(IsFieldWord("c")),
+				output:  []string{"one-two", "won't", "do"},
 			},
 
 			{
 				input:   "-one-two'  won't do",
-				pattern: Pattern{}.Add(FieldWord("c")),
-				output:  []string{"-", "one", "-", "two", "'  ", "won't", " ", "do"},
+				pattern: Pattern{}.Add(IsFieldWord("c")),
+				output:  []string{"one-two", "won't", "do"},
+			},
+
+			{
+				input:   "aa-_-aa-",
+				pattern: Pattern{}.Add(IsFieldWord("c")),
+				output:  []string{"aa-_-aa"},
 			},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q", idx, test.input),
-				test.pattern.ScanStrings(test.input).Strings(),
+				test.pattern.FindAllString(test.input, -1),
 				c.ShouldEqual,
 				test.output)
 		}
 
-		for idx, test := range []struct {
-			input   string
-			pattern Pattern
-		}{
-			{
-				input:   "a",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-
-			{
-				input:   "aa",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-
-			{
-				input:   "a-a",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-
-			{
-				input:   "a-a_a",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-
-			{
-				input:   "0-a_a",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-
-			{
-				input:   "-a-a",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-
-			{
-				input:   "+a-a",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-
-			{
-				input:   "one two won't do",
-				pattern: Pattern{}.Add(FieldWord("c")),
-			},
-		} {
-			c.SoMsg(
-				fmt.Sprintf("test #%d - %q", idx, test.input),
-				test.pattern.ScanStrings(test.input).String(),
-				c.ShouldEqual,
-				test.input)
-		}
-
 	})
 
-	c.Convey("FieldKey", t, func() {
+	c.Convey("IsFieldKey", t, func() {
 
 		for idx, test := range []struct {
 			input   string
@@ -147,49 +102,49 @@ func TestMatchersCommon(t *testing.T) {
 		}{
 			{
 				input:   "a",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a", "a"}},
 			},
 
 			{
 				input:   "aa",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"aa", "aa"}},
 			},
 
 			{
 				input:   "a-a",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
 
 			{
 				input:   "a-a_a",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a-a_a", "a-a_a"}},
 			},
 
 			{
 				input:   "0-a_a",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a_a", "a_a"}},
 			},
 
 			{
 				input:   "-a-a",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
 
 			{
 				input:   "a-a-",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
 
 			{
 				input:   "a-a-",
-				pattern: Pattern{}.Add(FieldKey("c", "^")),
+				pattern: Pattern{}.Add(IsFieldKey("c", "^")),
 				output:  [][]string(nil), // one may think that this should
 				// match the trailing dash character because it is not a field
 				// key, however, perl has the same results, ie:
@@ -199,7 +154,7 @@ func TestMatchersCommon(t *testing.T) {
 
 			{
 				input:   "+a-a",
-				pattern: Pattern{}.Add(FieldKey("c")),
+				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
 		} {
@@ -212,7 +167,7 @@ func TestMatchersCommon(t *testing.T) {
 
 	})
 
-	c.Convey("Keyword", t, func() {
+	c.Convey("IsKeyword", t, func() {
 
 		for idx, test := range []struct {
 			input   string
@@ -221,68 +176,208 @@ func TestMatchersCommon(t *testing.T) {
 		}{
 			{
 				input:   "a",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"a", "a"}},
 			},
 
 			{
 				input:   "a",
-				pattern: Pattern{}.Add(Keyword("c", "^")),
+				pattern: Pattern{}.Add(IsKeyword("c", "^")),
 				output:  [][]string(nil),
 			},
 
 			{
 				input:   "aa",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"aa", "aa"}},
 			},
 
 			{
 				input:   "a-a",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
 
 			{
 				input:   "a-a_a",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"a-a_a", "a-a_a"}},
 			},
 
 			{
 				input:   "0-a_a",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"-a_a", "-a_a"}},
 			},
 
 			{
 				input:   "-a-a",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"-a-a", "-a-a"}},
 			},
 
 			{
 				input:   "a-a-",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
 
 			{
 				input:   "+a-a",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"+a-a", "+a-a"}},
 			},
 
 			{
 				input:   "+ +a-a",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"+a-a", "+a-a"}},
 			},
 
 			{
 				input:   "+ +a-a -",
-				pattern: Pattern{}.Add(Keyword("c")),
+				pattern: Pattern{}.Add(IsKeyword("c")),
 				output:  [][]string{{"+a-a", "+a-a"}},
+			},
+
+			{
+				input:   "aa-_-aa-",
+				pattern: Pattern{}.Add(IsKeyword("c")),
+				output:  [][]string{{"aa-_-aa", "aa-_-aa"}},
+			},
+		} {
+			c.SoMsg(
+				fmt.Sprintf("test #%d - %q", idx, test.input),
+				test.pattern.FindAllStringSubmatch(test.input, -1),
+				c.ShouldEqual,
+				test.output)
+		}
+
+	})
+
+	c.Convey("IsHash10", t, func() {
+
+		for idx, test := range []struct {
+			input   string
+			pattern Pattern
+			output  [][]string
+		}{
+
+			{
+				input:   "000a000",
+				pattern: Pattern{}.Add(IsHash10()),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "0000000000",
+				pattern: Pattern{}.Add(IsHash10("^")),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "0000000000",
+				pattern: Pattern{}.Add(IsHash10()),
+				output:  [][]string{{"0000000000"}},
+			},
+
+			{
+				input:   "0000000000",
+				pattern: Pattern{}.Add(IsHash10("^")),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "000000000z",
+				pattern: Pattern{}.Caret().Add(IsHash10()).Dollar(),
+				output:  [][]string(nil),
+			},
+		} {
+			c.SoMsg(
+				fmt.Sprintf("test #%d - %q", idx, test.input),
+				test.pattern.FindAllStringSubmatch(test.input, -1),
+				c.ShouldEqual,
+				test.output)
+		}
+	})
+
+	c.Convey("IsAtLeastSixDigits", t, func() {
+
+		for idx, test := range []struct {
+			input   string
+			pattern Pattern
+			output  [][]string
+		}{
+
+			{
+				input:   "000a000",
+				pattern: Pattern{}.Add(IsAtLeastSixDigits()),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "00000",
+				pattern: Pattern{}.Add(IsAtLeastSixDigits()),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "0000000",
+				pattern: Pattern{}.Add(IsAtLeastSixDigits()),
+				output:  [][]string{{"000000"}},
+			},
+
+			{
+				input:   "0000000",
+				pattern: Pattern{}.Add(IsAtLeastSixDigits("^")),
+				output:  [][]string(nil),
+			},
+		} {
+			c.SoMsg(
+				fmt.Sprintf("test #%d - %q", idx, test.input),
+				test.pattern.FindAllStringSubmatch(test.input, -1),
+				c.ShouldEqual,
+				test.output)
+		}
+
+	})
+
+	c.Convey("IsUUID", t, func() {
+
+		for idx, test := range []struct {
+			input   string
+			pattern Pattern
+			output  [][]string
+		}{
+
+			{
+				input:   "000a000",
+				pattern: Pattern{}.Add(IsUUID()),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "12345678-1234-1234-1234-123456789012",
+				pattern: Pattern{}.Add(IsUUID("c")),
+				output:  [][]string{{"12345678-1234-1234-1234-123456789012", "12345678-1234-1234-1234-123456789012"}},
+			},
+
+			{
+				input:   "/blah-blah-12345678-1234-1234-1234-123456789012",
+				pattern: Pattern{}.Add(IsUUID("c")).Dollar(),
+				output:  [][]string{{"12345678-1234-1234-1234-123456789012", "12345678-1234-1234-1234-123456789012"}},
+			},
+
+			{
+				input:   "/blah-blah-12345678-1234-1234-1234-123456789012-nope",
+				pattern: Pattern{}.Add(IsUUID("c")).Dollar(),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "12345678!1234-1234-1234-123456789012",
+				pattern: Pattern{}.Add(IsUUID("c")),
+				output:  [][]string(nil),
 			},
 		} {
 			c.SoMsg(

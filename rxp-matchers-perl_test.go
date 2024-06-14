@@ -33,6 +33,14 @@ func TestMatchersClassPerl(t *testing.T) {
 		}{
 
 			{
+				input: "aBbaaBB",
+				pattern: Pattern{}.Not("+",
+					Text("b", "{1,2}", "i", "+"),
+				),
+				output: [][]string{{"a"}, {"aa"}},
+			},
+
+			{
 				input:   "aBabbb",
 				pattern: Pattern{}.Text("b", "{1,2}", "ic"),
 				output:  [][]string{{"B", "B"}, {"bb", "bb"}, {"b", "b"}},
@@ -79,6 +87,24 @@ func TestMatchersClassPerl(t *testing.T) {
 				pattern: Pattern{}.Text("aa", "+", "c"),
 				output:  [][]string{{"aa", "aa"}},
 			},
+
+			{
+				input:   "abaaa",
+				pattern: Pattern{}.Text("AA", "+", "^", "i", "c"),
+				output:  [][]string{{"ab", "ab"}, {"a", "a"}},
+			},
+
+			{
+				input:   "a",
+				pattern: Pattern{}.Text("aa", "+", "c"),
+				output:  [][]string(nil),
+			},
+
+			{
+				input:   "a",
+				pattern: Pattern{}.Text("aa", "+", "^", "c"),
+				output:  [][]string{{"a", "a"}},
+			},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q", idx, test.input),
@@ -123,7 +149,7 @@ func TestMatchersClassPerl(t *testing.T) {
 
 			{
 				input: "stuff @func/more/stuff",
-				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+				pattern: Pattern{}.Add(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 					// not capturing on purpose
 					this, size, okt := input.Get(index)
 					if proceed = okt && this == '@'; proceed {

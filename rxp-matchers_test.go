@@ -26,7 +26,7 @@ func TestMatchers(t *testing.T) {
 
 		c.So(
 			Pattern{}.
-				Add(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+				Add(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 					scoped = scope | CaptureFlag
 					if prev, _, ok := input.Prev(index); ok {
 						if prev == 'o' {
@@ -76,7 +76,7 @@ func TestMatchers(t *testing.T) {
 		p = Pattern{}.
 			Caret().
 			Text("/b/").
-			Not(Text("/"), "+", "c").
+			Text("/", "^", "+", "c").
 			Text("/", "??").
 			Dollar()
 		for idx, test := range []struct {
