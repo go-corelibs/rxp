@@ -314,7 +314,7 @@ func (f Flags) parseFlags(input []rune) (flags Flags, reps Reps, ok bool) {
 		// nop is allowed
 
 		case '^', 'm', 's', 'i', 'c':
-			flags, _, ok = flags.parseFlag(this)
+			flags, _, _ = flags.parseFlag(this)
 			continue
 
 		default:
