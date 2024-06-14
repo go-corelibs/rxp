@@ -1,6 +1,6 @@
 module github.com/go-corelibs/rxp
 
-go 1.22.3
+go 1.22.4
 
 require (
 	github.com/go-corelibs/runes v1.0.1
