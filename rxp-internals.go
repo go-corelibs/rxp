@@ -15,12 +15,27 @@
 package rxp
 
 import (
+	"bytes"
+
 	sync "github.com/go-corelibs/x-sync"
 )
 
 // spStringBuilder from go-corelibs/x-sync does not seem to impact performance
 // to the same extent as is the case of sync.Append
 var spStringBuilder = sync.NewStringBuilderPool(1)
+var spBytesBuffer = sync.NewPool[*bytes.Buffer](1, func() *bytes.Buffer {
+	return new(bytes.Buffer)
+}, func(v *bytes.Buffer) *bytes.Buffer {
+	// getter
+	v.Reset()
+	return v
+}, func(v *bytes.Buffer) *bytes.Buffer {
+	// setter
+	if v.Len() < 64000 {
+		return v
+	}
+	return nil
+})
 
 func pushString(slice []string, data string) []string {
 	m := len(slice)
