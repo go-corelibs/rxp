@@ -101,17 +101,16 @@ func Text(text string, flags ...string) Matcher {
 		}
 
 		consumed = size
-
 		return
 	}, flags...)
 }
 
 // Dot creates a Matcher equivalent to the regexp dot (.)
 func Dot(flags ...string) Matcher {
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope
 		if r, rs, ok := input.Get(index); ok {
-			proceed = r != '\n' || scoped.DotNL()
+			proceed = r != '\n' || scoped&DotNewlineFlag == DotNewlineFlag
 			if proceed {
 				consumed = rs
 			}
@@ -229,10 +228,10 @@ func NamedClass(name AsciiNames, flags ...string) Matcher {
 //	IsUnicodeRange(unicode.Braille)
 func IsUnicodeRange(table *unicode.RangeTable, flags ...string) Matcher {
 	_ = unicode.Is(table, 'a') // compile-time test for panic cases
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope
 		if r, rs, ok := input.Get(index); ok {
-			if proceed = unicode.Is(table, r); scoped.Negated() {
+			if proceed = unicode.Is(table, r); scoped&NegatedFlag == NegatedFlag {
 				proceed = !proceed
 			}
 			if proceed {
@@ -255,6 +254,9 @@ func R(characters string, flags ...string) Matcher {
 	var ranges [][]rune
 	chars := []rune(characters)
 	charsLen := len(chars)
+
+	// this is all happening at compile time so no need to use a pushRune or
+	// other append() optimizations
 
 	// parse the character class rune pattern [xyza-f]
 	for idx := 0; idx < charsLen; idx++ {
