@@ -20,12 +20,27 @@ package rxp
 // Or accepts Pattern, Matcher and string types and will panic on all others
 func Or(options ...interface{}) Matcher {
 	matchers, flags, _ := ParseOptions(options...)
-	return MakeMatcher(func(scope Flags, reps Reps, input *RuneBuffer, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
+	return MakeMatcher(func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
 		scoped = scope
+		if scoped&NegatedFlag == NegatedFlag {
+			// can't be any of
+			clone := scoped.Unset(NegatedFlag)
+			for _, matcher := range matchers {
+				if _, _, proceed = matcher(clone, reps, input, index, sm); proceed {
+					break
+				}
+			}
+			if proceed = !proceed; proceed {
+				_, size, _ := input.Get(index)
+				consumed += size
+			}
+			return
+		}
+		// stop at the first
 		for _, matcher := range matchers {
 			clone := scoped
 			if scoping, cons, next := matcher(clone, reps, input, index, sm); next {
-				return scoping, cons, !scoped.Negated()
+				return scoping, cons, next
 			}
 		}
 		return
