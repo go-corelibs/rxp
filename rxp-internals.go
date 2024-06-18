@@ -171,3 +171,10 @@ func mapKeys[K comparable, V interface{}](m map[K]V) []K {
 	}
 	return slice
 }
+
+func clamp[V int | int64](v, cap V) V {
+	if v > cap {
+		return cap
+	}
+	return v
+}
