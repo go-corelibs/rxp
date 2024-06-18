@@ -61,7 +61,7 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 			// call each matcher once, expecting matcher to progress the index
 			if scoping, keep, proceed := matcher(DefaultFlags, gDefaultReps, s.input, s.index, set); proceed {
 				if scoping.Capture() {
-					set = pushSubMatch(set, [2]int{s.index, s.index + keep})
+					set = pushSubMatch(set, [2]int{s.index, clamp(s.index+keep, s.input.len)})
 				}
 				if keep > 0 {
 					consumed += keep
@@ -89,7 +89,7 @@ func (p Pattern) match(s *cPatternState, count int) (matched bool) {
 
 		if totalCompleted >= required {
 			if start < s.index {
-				set[0][0], set[0][1] = start, s.index
+				set[0][0], set[0][1] = start, clamp(s.index, s.input.len)
 				s.matches = pushMatch(s.matches, set)
 				set = [][2]int{{}}
 			} else if atLeastZero > 0 && 0 <= s.index && s.index <= s.input.len {
