@@ -89,7 +89,7 @@ func isFieldKeyScanForward(input *InputReader, start int) (size int, ok bool) {
 		if RuneIsALNUM(nxt) {
 			// accept this rune
 			return sz, true
-		} else if nxt == '-' || nxt == '_' || nxt == '\'' {
+		} else if nxt == '-' || nxt == '_' {
 			if size, ok = isFieldKeyScanForward(input, start+sz); ok {
 				size += sz
 				return size, true
@@ -101,7 +101,10 @@ func isFieldKeyScanForward(input *InputReader, start int) (size int, ok bool) {
 
 // IsFieldKey creates a Matcher equivalent to:
 //
-//	(?:\b[a-zA-Z][-_a-zA-Z0-9']+?[a-zA-Z0-9]\b)
+//	(?:\b[a-zA-Z][-_a-zA-Z0-9]+?[a-zA-Z0-9]\b)
+//
+// IsFieldKey is intended to validate CSS and HTML attribute key names such as
+// "data-thing" or "some_value"
 func IsFieldKey(flags ...string) Matcher {
 	_, cfg := ParseFlags(flags...)
 	return func(scope Flags, reps Reps, input *InputReader, index int, sm [][2]int) (scoped Flags, consumed int, proceed bool) {
@@ -124,7 +127,7 @@ func IsFieldKey(flags ...string) Matcher {
 						consumed += rs
 						idx += rs
 						continue
-					} else if r == '-' || r == '_' || r == '\'' {
+					} else if r == '-' || r == '_' {
 						if sz, ok := isFieldKeyScanForward(input, idx+rs); ok {
 							consumed += rs + sz
 							idx += rs + sz

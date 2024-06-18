@@ -157,6 +157,12 @@ func TestMatchersCommon(t *testing.T) {
 				pattern: Pattern{}.Add(IsFieldKey("c")),
 				output:  [][]string{{"a-a", "a-a"}},
 			},
+
+			{ // IsFieldKey does not support single-quotes
+				input:   "+a'a",
+				pattern: Pattern{}.Add(IsFieldKey("c")),
+				output:  [][]string{{"a", "a"}, {"a", "a"}},
+			},
 		} {
 			c.SoMsg(
 				fmt.Sprintf("test #%d - %q", idx, test.input),
