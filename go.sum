@@ -1,7 +1,7 @@
 github.com/go-corelibs/runes v1.1.0 h1:MM+5dfyO3JoPDpuTBge6BqLLPalTEZHDJbm4/0N0+cE=
 github.com/go-corelibs/runes v1.1.0/go.mod h1:dp2eBD4fIixM1MOlW4DlbvRb6YYa/e0E7xSxPQbwgFA=
-github.com/go-corelibs/x-sync v0.1.0 h1:ABBFNAqqn5U1fLnJPjjMl6GXis2VRY6BaeVUPjbdQYw=
-github.com/go-corelibs/x-sync v0.1.0/go.mod h1:Kxql+YdmFUCdM/wV3Cctzrp0uAlUnBAz3Xhcq+Ulr4E=
+github.com/go-corelibs/x-sync v0.1.1 h1:XcVUjAMu5SNSLSP4xk2GiILiT1REew4ju+ENuXFC1k8=
+github.com/go-corelibs/x-sync v0.1.1/go.mod h1:MgF9ssjSVbWs5kkFxEvisNNpWvAaebTj+LoZTlryQmE=
 github.com/gopherjs/gopherjs v1.17.2 h1:fQnZVsXk8uxXIStYb0N4bGk7jeyTalG/wsZjQ25dO0g=
 github.com/gopherjs/gopherjs v1.17.2/go.mod h1:pRRIvn/QzFLrKfvEz3qUuEhtE/zLCWfreZ6J5gM2i+k=
 github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7C0MuV77Wo=

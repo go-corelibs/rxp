@@ -4,7 +4,7 @@ go 1.22.4
 
 require (
 	github.com/go-corelibs/runes v1.1.0
-	github.com/go-corelibs/x-sync v0.1.0
+	github.com/go-corelibs/x-sync v0.1.1
 	github.com/smartystreets/goconvey v1.8.1
 )
 
